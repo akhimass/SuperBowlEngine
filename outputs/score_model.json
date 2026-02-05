@@ -1,0 +1,31 @@
+{
+  "margin_coef": {
+    "margin_top": 0.24950063487151208,
+    "margin_to": 3.4493180586534247,
+    "margin_big": 0.7363971869959138,
+    "margin_3d": 0.1492153357995224,
+    "margin_rz": 0.08186139208509167,
+    "sos_z": 0.0
+  },
+  "margin_intercept": 2.777739393482423,
+  "margin_std": 8.082428301778902,
+  "total_coef": {
+    "margin_top": -0.1353117797573259,
+    "margin_to": -0.0670351088516031,
+    "margin_big": 0.32673263814341297,
+    "margin_3d": 0.07241212477739714,
+    "margin_rz": 0.00960972158829122,
+    "sos_z": 0.0
+  },
+  "total_intercept": 47.64549110897946,
+  "total_std": 14.334234321213929,
+  "feature_names": [
+    "margin_top",
+    "margin_to",
+    "margin_big",
+    "margin_3d",
+    "margin_rz",
+    "sos_z"
+  ],
+  "n_samples": 187
+}

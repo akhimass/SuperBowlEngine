@@ -1,0 +1,8 @@
+# Locked / pinned deps for reproducible install (pip install -r requirements.txt)
+# Core (match pyproject.toml)
+nfl-data-py>=0.3.0
+pandas>=2.0.0
+# App
+streamlit>=1.28.0
+# Dev
+pytest>=7.0.0

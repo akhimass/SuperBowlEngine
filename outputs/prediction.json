@@ -1,0 +1,72 @@
+{
+  "p_team_a_win": 0.938,
+  "p_team_b_win": 0.062,
+  "predicted_winner": "SEA",
+  "keys_won": {
+    "SEA": 3,
+    "NE": 1
+  },
+  "ties": 1,
+  "tied_keys": [
+    "BIG"
+  ],
+  "predicted_score": {
+    "SEA": 31,
+    "NE": 18
+  },
+  "predicted_margin": 13.5,
+  "predicted_total": 49.0,
+  "score_ci": {
+    "margin_sd": 8.08,
+    "total_sd": 14.33
+  },
+  "top_3_drivers": [
+    [
+      "RZ",
+      1.0220833333333332
+    ],
+    [
+      "3D",
+      0.8442500000000002
+    ],
+    [
+      "SOS_z",
+      0.4092066661628914
+    ]
+  ],
+  "logit": 2.716,
+  "explanation": {
+    "key_winners": {
+      "TOP": "NE",
+      "TO": "SEA",
+      "BIG": "TIE",
+      "3D": "SEA",
+      "RZ": "SEA"
+    },
+    "margin_table": {
+      "TOP": -1.0600000000000023,
+      "TO": 0.10196078431372557,
+      "BIG": 0,
+      "3D": 15.350000000000001,
+      "RZ": 22.299999999999997,
+      "SOS_z": 2.728044441085943,
+      "DGI": 0.0
+    },
+    "driver_ranking": [
+      [
+        "RZ",
+        1.0220833333333332
+      ],
+      [
+        "3D",
+        0.8442500000000002
+      ],
+      [
+        "SOS_z",
+        0.4092066661628914
+      ]
+    ]
+  },
+  "p_sea_win": 0.938,
+  "p_ne_win": 0.062
+}

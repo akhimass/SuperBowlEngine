@@ -1,0 +1,107 @@
+# SuperBowlEngine
+
+Explainable NFL Super Bowl prediction using the **5 Keys** (TOP, turnovers, big plays, 3rd down %, red zone TD %) and a professor-style logistic predictor with turnover emphasis.
+
+## Install
+
+From the project root (with `src` layout):
+
+```bash
+pip install -e .
+```
+
+Requirements: Python 3.9+, **nflreadpy** (nflverse data), pandas. Optional: streamlit, matplotlib, pytest.
+
+Caching is handled by nflreadpy. To use filesystem cache:
+
+```bash
+export NFLREADPY_CACHE=filesystem
+export NFLREADPY_CACHE_DIR=~/.cache/nflreadpy   # optional
+```
+
+## Run
+
+- **Generate Slide 5 prediction (recommended)**:
+
+  ```bash
+  python scripts/run_and_make_slide5.py --year 2024 --team-a SEA --team-b NE
+  ```
+  Produces `outputs/slide5_prediction.png` and `outputs/prediction.json`. Uses nflreadpy for PBP (REG + POST).
+
+- **Reproduce original p1.py output** (postseason keys + predictor):
+
+  ```bash
+  python -m superbowlengine repro
+  ```
+  Or: `python scripts/p1_repro.py` (from repo root with `PYTHONPATH=src` or package installed).
+
+- **Streamlit app**:
+
+  ```bash
+  python -m superbowlengine app
+  ```
+  Or: `streamlit run src/superbowlengine/app/streamlit_app.py`
+
+- **CLI predict**:
+
+  ```bash
+  python -m superbowlengine predict --year 2024 --team-a SEA --team-b NE
+  ```
+
+- **Scripts runner**:
+
+  ```bash
+  python scripts/run.py repro
+  python scripts/run.py app
+  python scripts/run.py predict --year 2024 --team-a SEA --team-b NE
+  ```
+
+## Project layout
+
+```
+SuperBowlEngine/
+  README.md
+  pyproject.toml
+  src/superbowlengine/
+    __init__.py
+    __main__.py
+    config.py
+    data/
+      load.py            # nflreadpy PBP + schedules
+      cache.py           # optional manual parquet cache
+    features/
+      keys.py, qb.py, sos.py
+    models/
+      professor_keys.py, turnover_regression.py, dgi.py
+    app/
+      streamlit_app.py
+    utils/
+      time.py, math.py
+    viz/
+      slide5.py
+  scripts/
+    p1_repro.py
+    run_and_make_slide5.py
+    make_slide5.py
+    run.py
+  tests/
+  outputs/
+```
+
+## Config
+
+Defaults in `src/superbowlengine/config.py`: `default_year`, `big_play_yards`, `red_zone_yardline`, `turnover_weight`, `key_weight`, `rule_bonus`, and PBP column list.
+
+## Tests
+
+```bash
+pytest tests/ -v
+```
+
+(Ensure `src` is on `PYTHONPATH` or install the package in editable mode.)
+
+## Design notes
+
+- **Data**: PBP and schedules come from **nflreadpy** (nflverse). Caching is via nflreadpy env vars (`NFLREADPY_CACHE`, `NFLREADPY_CACHE_DIR`).
+- **Pure functions**: Feature and model functions take DataFrames/dataclasses explicitly; I/O is in `data/load`.
+- **Backward compatibility**: `predict_from_keys(sea_keys, ne_keys)` keeps original p1.py semantics. `load_pbp()` and `get_cached_pbp()` still work (get_pbp under the hood).
