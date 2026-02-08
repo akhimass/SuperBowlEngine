@@ -1,107 +1,106 @@
-# SuperBowlEngine
+# SuperBowlEngine – Super Bowl LX Prediction & QB Production Model
 
-Explainable Super Bowl prediction: four engines, one pipeline. **(1) 5 Keys** turns POST PBP into team keys (TOP, TO, big plays, 3rd down %, red zone TD %). **(2) Professor Keys** combines key margins + SOS + a “3+ keys wins” rule → logistic model → win prob and winner. **(3) Score model** regresses keys → projected margin and total (scoreboard). **(4) QB Production** summarizes QB postseason (drive sustain, situational, off-script, defense strength) → stat strip. nflverse; Python, nflreadpy, matplotlib.
+I built SuperBowlEngine to predict Super Bowl outcomes and quarterback impact using a multi-engine pipeline inspired by front-office decision support. It combines team-level keys, opponent-adjusted weighting, and a separate QB production engine into win probabilities, score projections, and scouting-style visuals.
 
-## Install
+**If you came here from LinkedIn,** this project is also summarized under my Projects section there.
 
-From the project root (with `src` layout):
+---
+
+## How the Model Works
+
+### Team Outcome Engine (5 Keys)
+
+The team engine is built on five keys: **Time of Possession**, **Turnovers**, **Big Plays**, **3rd Down Efficiency**, and **Red Zone TD%**. The predictive framework uses a “3-of-5 keys” rule: winning at least three of these five is a strong historical predictor of who wins the game. The model compares both teams on each key and combines the margins into a single win probability.
+
+Playoff performance is **opponent-adjusted** using regular-season defensive strength (SOS and defensive difficulty), so beating a tough defense is weighted more than beating a weak one. Keys can be aggregated with **postseason vs regular-season context**—e.g., opponent-weighted postseason averages with optional dampening for opponent turnover meltdowns—so the evaluation reflects who you played and when.
+
+### Quarterback Production Engine
+
+The QB engine does **not** use box-score totals. It scores postseason quarterback impact on three dimensions: **drive sustainability** (converting and avoiding negative plays), **high-leverage execution** (third down and red zone), and **off-script value** (scrambles and extended plays). Each component is **adjusted for defensive difficulty** using regular-season EPA allowed (or a success-based fallback), so performance against elite defenses is weighted appropriately.
+
+**The team-level model explains why the game tilts one way; the QB production engine explains how that advantage is created on the field.**
+
+---
+
+## Outputs
+
+- **Win probabilities** (e.g., SEA vs NE) from the Professor Keys engine.
+- **Score prediction** from a regression on key margins (display only; win probability is keys-based).
+- **Visual scouting-style reports**: tables and cards (e.g., slide5 prediction, explainer, QB production strip) saved under `outputs/`, not raw charts.
+
+---
+
+## Repository Tour
+
+| Area | Purpose |
+|------|---------|
+| `src/superbowlengine/models/` | Team outcome engine: `predict`, `predict_from_keys`, score model, turnover regression. |
+| `src/superbowlengine/data/` | nflreadpy-based PBP and schedule loading; availability checks. |
+| `src/superbowlengine/features/` | Per-game keys, opponent weighting, SOS, keys pipeline. |
+| `src/superbowlengine/viz/` | Slide5 prediction and explainer visuals; QB production card. |
+| `scripts/run_and_make_slide5.py` | Full pipeline: load data, compute keys, predict, render slide 5 + JSON. |
+| `scripts/make_qb_prod_card.py` | QB production strip and JSON reports for two QBs. |
+| `scripts/list_team_games.py` | List team games (postseason) for a given year. |
+| `scripts/inspect_nflreadpy_columns.py` | Inspect nflreadpy PBP columns for a season. |
+
+---
+
+## Quickstart
+
+From the project root (with the package installed):
 
 ```bash
 pip install -e .
 ```
 
-Requirements: Python 3.9+, **nflreadpy** (nflverse data), pandas. Optional: streamlit, matplotlib, pytest.
+**Generate Slide 5 (prediction + explainer + JSON)** for 2025, SEA vs NE, opponent-weighted keys:
 
-Caching is handled by nflreadpy. To use filesystem cache:
+```bash
+python scripts/run_and_make_slide5.py --year 2025 --team-a SEA --team-b NE --mode opp_weighted
+```
+
+With debug output (key winners, margins, contributions, per-game table):
+
+```bash
+python scripts/run_and_make_slide5.py --year 2025 --team-a SEA --team-b NE --mode opp_weighted --debug
+```
+
+**Generate QB production card** for 2025 (example: Drake Maye vs Sam Darnold):
+
+```bash
+python scripts/make_qb_prod_card.py --year 2025 --qb-a "Drake Maye" --team-a NE --qb-b "Sam Darnold" --team-b SEA
+```
+
+Data is loaded via **nflreadpy** (nflverse). Optional filesystem cache:
 
 ```bash
 export NFLREADPY_CACHE=filesystem
-export NFLREADPY_CACHE_DIR=~/.cache/nflreadpy   # optional
+export NFLREADPY_CACHE_DIR=~/.cache/nflreadpy
 ```
 
-## Run
+Requirements: Python 3.9+, nflreadpy, pandas. Optional: streamlit, matplotlib, pytest.
 
-- **Generate Slide 5 prediction (recommended)**:
+---
 
-  ```bash
-  python scripts/run_and_make_slide5.py --year 2024 --team-a SEA --team-b NE
-  ```
-  Produces `outputs/slide5_prediction.png` and `outputs/prediction.json`. Uses nflreadpy for PBP (REG + POST).
+## Methodology Notes
 
-- **Reproduce original p1.py output** (postseason keys + predictor):
+- **Tie handling:** When a key is tied, it is explicitly labeled as TIE; neither team is forced a winner on that key.
+- **Big plays:** Pass ≥ 15 yards, rush ≥ 10 yards (configurable in `config.py`).
+- **Opponent meltdown dampener:** In `opp_weighted` mode, games where the opponent’s turnovers exceed a threshold are down-weighted so outlier giveaways don’t dominate the average.
+- **Availability:** The data layer reports readiness (GREEN / YELLOW / RED) based on required PBP columns for the 5 Keys pipeline.
 
-  ```bash
-  python -m superbowlengine repro
-  ```
-  Or: `python scripts/p1_repro.py` (from repo root with `PYTHONPATH=src` or package installed).
+---
 
-- **Streamlit app**:
+## Future Work
 
-  ```bash
-  python -m superbowlengine app
-  ```
-  Or: `streamlit run src/superbowlengine/app/streamlit_app.py`
+- Improve score prediction calibration and uncertainty intervals.
+- Richer visuals: larger fonts, table layouts, no overlapping text.
+- Team rankings / percentiles in the explainer and slide assets.
+- Expanded scouting report export (e.g., PDF/PNG bundle).
+- Generalized matchup runner for any teams and years.
+- Model validation across past Super Bowls (backtesting).
+- Optional Streamlit/CLI for ad-hoc matchups without editing scripts.
 
-- **CLI predict**:
+---
 
-  ```bash
-  python -m superbowlengine predict --year 2024 --team-a SEA --team-b NE
-  ```
-
-- **Scripts runner**:
-
-  ```bash
-  python scripts/run.py repro
-  python scripts/run.py app
-  python scripts/run.py predict --year 2024 --team-a SEA --team-b NE
-  ```
-
-## Project layout
-
-```
-SuperBowlEngine/
-  README.md
-  pyproject.toml
-  src/superbowlengine/
-    __init__.py
-    __main__.py
-    config.py
-    data/
-      load.py            # nflreadpy PBP + schedules
-      cache.py           # optional manual parquet cache
-    features/
-      keys.py, qb.py, sos.py
-    models/
-      professor_keys.py, turnover_regression.py, dgi.py
-    app/
-      streamlit_app.py
-    utils/
-      time.py, math.py
-    viz/
-      slide5.py
-  scripts/
-    p1_repro.py
-    run_and_make_slide5.py
-    make_slide5.py
-    run.py
-  tests/
-  outputs/
-```
-
-## Config
-
-Defaults in `src/superbowlengine/config.py`: `default_year`, `big_play_yards`, `red_zone_yardline`, `turnover_weight`, `key_weight`, `rule_bonus`, and PBP column list.
-
-## Tests
-
-```bash
-pytest tests/ -v
-```
-
-(Ensure `src` is on `PYTHONPATH` or install the package in editable mode.)
-
-## Design notes
-
-- **Data**: PBP and schedules come from **nflreadpy** (nflverse). Caching is via nflreadpy env vars (`NFLREADPY_CACHE`, `NFLREADPY_CACHE_DIR`).
-- **Pure functions**: Feature and model functions take DataFrames/dataclasses explicitly; I/O is in `data/load`.
-- **Backward compatibility**: `predict_from_keys(sea_keys, ne_keys)` keeps original p1.py semantics. `load_pbp()` and `get_cached_pbp()` still work (get_pbp under the hood).
+I’m continuing to refine SuperBowlEngine as a reusable system for matchup-level prediction and QB impact, and to align it with how front offices separate signal from noise. The codebase is structured so new seasons and matchups can be run with minimal changes.
