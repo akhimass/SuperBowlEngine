@@ -1,6 +1,6 @@
 # SuperBowlEngine
 
-Explainable NFL Super Bowl prediction using the **5 Keys** (TOP, turnovers, big plays, 3rd down %, red zone TD %) and a professor-style logistic predictor with turnover emphasis.
+Explainable Super Bowl prediction: four engines, one pipeline. **(1) 5 Keys** turns POST PBP into team keys (TOP, TO, big plays, 3rd down %, red zone TD %). **(2) Professor Keys** combines key margins + SOS + a “3+ keys wins” rule → logistic model → win prob and winner. **(3) Score model** regresses keys → projected margin and total (scoreboard). **(4) QB Production** summarizes QB postseason (drive sustain, situational, off-script, defense strength) → stat strip. nflverse; Python, nflreadpy, matplotlib.
 
 ## Install
 
