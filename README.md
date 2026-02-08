@@ -22,6 +22,14 @@ The QB engine does **not** use box-score totals. It scores postseason quarterbac
 
 ---
 
+## Example Scouting Report Output
+
+![Team Outcome Engine scouting report](outputs/slide5_explainer.png)
+
+This is the Team Outcome Engine scouting report for Super Bowl LX. It compares both teams across the five keys and shows key winners, margins, and contextual drivers (e.g., opponent difficulty and top contributors). The format is designed for clarity and slide-ready presentation, not dense charts.
+
+---
+
 ## Outputs
 
 - **Win probabilities** (e.g., SEA vs NE) from the Professor Keys engine.
