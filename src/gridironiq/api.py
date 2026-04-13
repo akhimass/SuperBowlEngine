@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -160,15 +161,28 @@ app = FastAPI(title="GridironIQ Backend", version="0.1.0")
 # Only mounts the reports output folder.
 app.mount("/report-assets", StaticFiles(directory="outputs/reports"), name="report-assets")
 
-# Allow local frontend dev servers (Vite / Lovable) to call the API
+# CORS: local dev + optional production origins (comma-separated) + Vercel previews via regex.
+_cors_default = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+_cors_extra = os.getenv("GRIDIRONIQ_CORS_ORIGINS", "")
+_cors_origins = list(_cors_default)
+if _cors_extra.strip():
+    _cors_origins.extend(x.strip() for x in _cors_extra.split(",") if x.strip())
+if "GRIDIRONIQ_CORS_ORIGIN_REGEX" in os.environ:
+    _cors_rx = os.environ["GRIDIRONIQ_CORS_ORIGIN_REGEX"].strip()
+    _cors_regex: str | None = _cors_rx if _cors_rx else None
+else:
+    # Match https://*.vercel.app (preview + production on vercel.app host)
+    _cors_regex = r"https://.*\.vercel\.app"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-    ],
+    allow_origins=_cors_origins,
+    allow_origin_regex=_cors_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

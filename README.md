@@ -1,215 +1,179 @@
-# SuperBowlEngine – Super Bowl LX Prediction & QB Production Model
+# GridironIQ
 
-I built SuperBowlEngine to predict Super Bowl outcomes and quarterback impact using a multi-engine pipeline inspired by front-office decision support. It combines team-level keys, opponent-adjusted weighting, and a separate QB production engine into win probabilities, score projections, and scouting-style visuals.
+**GridironIQ** is a full-stack NFL intelligence application: a **React** web app plus a **Python** analytics engine and **FastAPI** backend. It combines explainable game prediction (five-keys framework), schedule and matchup reports, **draft intelligence** (nflverse-backed board, Monte Carlo availability, PDF war room reports), and a **2026 Round 1 mock draft simulator** that runs entirely in the browser with static big-board data and need-aware pick logic.
 
-**If you came here from LinkedIn,** this project is also summarized under my Projects section there.
+The repository is a **monorepo**:
 
----
-
-## How the Model Works
-
-### Team Outcome Engine (5 Keys)
-
-The team engine is built on five keys: **Time of Possession**, **Turnovers**, **Big Plays**, **3rd Down Efficiency**, and **Red Zone TD%**. The predictive framework uses a “3-of-5 keys” rule: winning at least three of these five is a strong historical predictor of who wins the game. The model compares both teams on each key and combines the margins into a single win probability.
-
-Playoff performance is **opponent-adjusted** using regular-season defensive strength (SOS and defensive difficulty), so beating a tough defense is weighted more than beating a weak one. Keys can be aggregated with **postseason vs regular-season context**—e.g., opponent-weighted postseason averages with optional dampening for opponent turnover meltdowns—so the evaluation reflects who you played and when.
-
-### Quarterback Production Engine
-
-The QB engine does **not** use box-score totals. It scores postseason quarterback impact on three dimensions: **drive sustainability** (converting and avoiding negative plays), **high-leverage execution** (third down and red zone), and **off-script value** (scrambles and extended plays). Each component is **adjusted for defensive difficulty** using regular-season EPA allowed (or a success-based fallback), so performance against elite defenses is weighted appropriately.
-
-**The team-level model explains why the game tilts one way; the QB production engine explains how that advantage is created on the field.**
+| Path | Role |
+|------|------|
+| **`gridiron-intel/`** | Production UI (Vite, React, TypeScript, shadcn/ui): matchup engine, schedule explorer, draft room, mock draft simulator, report library, backtesting views. |
+| **`src/gridironiq/`** | Backend package: FastAPI (`api.py`), matchup and QB engines, schedule pipelines, draft board + team needs, PDF report renderer (Jinja2 + WeasyPrint), optional local Phi-4 text for narratives. |
+| **`src/superbowlengine/`** | Original **5 Keys** prediction core, data loaders, features, and professor-style models used by the stack (package name unchanged on PyPI/local install). |
+| **`scripts/`** | Training, audits, schedule/report pipelines, logo manifest, backend runner. |
+| **`tests/`** | Pytest coverage for models, API payloads, draft engine, reports, AI guardrails, and more. |
+| **`docs/`** | Architecture notes, AI statistician, team logos, legacy example assets. |
 
 ---
 
-## Example Scouting Report Output
+## Features
 
-![Team Outcome Engine scouting report](outputs/slide5_explainer.png)
+### Web app (`gridiron-intel`)
 
-This is the Team Outcome Engine scouting report for Super Bowl LX. It compares both teams across the five keys and shows key winners, margins, and contextual drivers (e.g., opponent difficulty and top contributors). The format is designed for clarity and slide-ready presentation, not dense charts.
+- **Matchup Engine** — Pick season and teams; view win probability, keys, and structured scouting context (calls GridironIQ API).
+- **Schedule history & game reports** — Browse schedules and per-game narrative-style reports.
+- **Draft Room** — Live draft board from the API: team needs, prospect table, recommendations, trade scan, analyst template/AI hooks.
+- **2026 Mock Draft** — **Round 1 only** (32 picks): choose your team, make your pick on the clock, AI-style projections for other teams using published 2026 board data and team needs. No network calls; state lives in the session. Route: `/draft/simulator`.
+- **Report library & data accuracy** — Report browsing and backtesting-oriented UI tied to backend capabilities.
 
----
+### Backend (`gridironiq`)
 
-## Outputs
+- REST API for matchups, QB comparison, schedule predictions, draft simulate/recommend/intelligence, AI chat guardrails, and **draft PDF reports** (`POST /api/draft/report`).
+- **Draft pipeline** — `python -m gridironiq.draft.pipeline` for JSON board output and optional PDFs under `outputs/reports/draft/` (served as static assets when configured).
+- **Reports** — Matchup, broadcast, presentation, situational, and heatmap-oriented report builders for JSON (+ optional PNG paths).
 
-- **Win probabilities** (e.g., SEA vs NE) from the Professor Keys engine.
-- **Score prediction** from a regression on key margins (display only; win probability is keys-based).
-- **Visual scouting-style reports**: tables and cards (e.g., slide5 prediction, explainer, QB production strip) saved under `outputs/`, not raw charts.
+### Optional local AI
 
----
-
-## Repository Tour
-
-| Area | Purpose |
-|------|---------|
-| `src/superbowlengine/models/` | Team outcome engine: `predict`, `predict_from_keys`, score model, turnover regression. |
-| `src/superbowlengine/data/` | nflreadpy-based PBP and schedule loading; availability checks. |
-| `src/superbowlengine/features/` | Per-game keys, opponent weighting, SOS, keys pipeline. |
-| `src/superbowlengine/viz/` | Slide5 prediction and explainer visuals; QB production card. |
-| `scripts/run_and_make_slide5.py` | Full pipeline: load data, compute keys, predict, render slide 5 + JSON. |
-| `scripts/make_qb_prod_card.py` | QB production strip and JSON reports for two QBs. |
-| `scripts/list_team_games.py` | List team games (postseason) for a given year. |
-| `scripts/inspect_nflreadpy_columns.py` | Inspect nflreadpy PBP columns for a season. |
-| `scripts/generate_team_logo_manifest.py` | Scan `teamlogo/` and write `outputs/team_logo_manifest.json`. See [Team logos](docs/TEAM_LOGOS.md). |
-
----
-
-## Team logos
-
-The `teamlogo/` folder holds one logo per NFL team. A **manifest** maps team abbreviation → logo path so backend and frontend use the same asset. See **[docs/TEAM_LOGOS.md](docs/TEAM_LOGOS.md)** for filename format, how to regenerate the manifest, and how duplicates/unmatched files are handled. Regenerate with: `python scripts/generate_team_logo_manifest.py`. To serve logos in the frontend, run: `python scripts/sync_team_logos_to_frontend.py`.
+- **Phi-4** (local weights via `transformers`) can power draft report narratives and explainer flows when configured; **`--no-ai`** or API flags use deterministic templates. No cloud API key is required for core functionality.
 
 ---
 
 ## Quickstart
 
-From the project root (with the package installed):
+### Prerequisites
+
+- **Python** 3.10+ ([uv](https://github.com/astral-sh/uv) or `pip`)
+- **Node.js** 18+ for the frontend
+
+### Install Python package
+
+From the repository root:
 
 ```bash
-pip install -e .
+uv sync
+# or: pip install -e .
 ```
 
-**Generate Slide 5 (prediction + explainer + JSON)** for 2025, SEA vs NE, opponent-weighted keys:
+The installable distribution is still named **`superbowlengine`** in `pyproject.toml` (legacy package name); imports use **`gridironiq`** for the app API and **`superbowlengine`** for the keys engine.
+
+### Run the API
 
 ```bash
-python scripts/run_and_make_slide5.py --year 2025 --team-a SEA --team-b NE --mode opp_weighted
+uv run uvicorn gridironiq.api:app --reload --host 0.0.0.0 --port 8000
 ```
 
-With debug output (key winners, margins, contributions, per-game table):
+### Run the web UI
 
 ```bash
-python scripts/run_and_make_slide5.py --year 2025 --team-a SEA --team-b NE --mode opp_weighted --debug
+cd gridiron-intel && npm install && npm run dev
 ```
 
-**Generate QB production card** for 2025 (example: Drake Maye vs Sam Darnold):
+Point the UI at your API (e.g. in `.env` or env):
 
 ```bash
-python scripts/make_qb_prod_card.py --year 2025 --qb-a "Drake Maye" --team-a NE --qb-b "Sam Darnold" --team-b SEA
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-Data is loaded via **nflreadpy** (nflverse). Optional filesystem cache:
+Open the dev server URL (typically `http://localhost:5173`). Use **Draft Room** for API-backed analysis and **2026 Mock Draft** for the standalone Round 1 simulator.
+
+### Deploy the web app (Vercel)
+
+1. Create a Vercel project from this repo and set **Root Directory** to **`gridiron-intel`**.
+2. Add **`VITE_API_BASE_URL`** in Vercel → Environment Variables (Production and Preview), pointing at your public API (no trailing slash), e.g. `https://your-api.example.com`.
+3. Deploy. `vercel.json` in `gridiron-intel` runs `npm run build` and rewrites client routes to `index.html` for React Router.
+
+The API must allow your frontend origin. By default, **`https://*.vercel.app`** is allowed via CORS regex. For a custom domain, set **`GRIDIRONIQ_CORS_ORIGINS`** on the API server (see **`.env.example`**). The Python API is not run on Vercel in this setup—host it on Render, Fly.io, Railway, etc.
+
+See **`gridiron-intel/README.md`** for a short checklist.
+
+### NFL data cache (optional)
 
 ```bash
 export NFLREADPY_CACHE=filesystem
 export NFLREADPY_CACHE_DIR=~/.cache/nflreadpy
 ```
 
-Requirements: Python 3.9+, nflreadpy, pandas. Optional: streamlit, matplotlib, pytest.
-
 ---
 
-## GridironIQ: Backend API & Frontend
+## Draft PDF reports (WeasyPrint)
 
-The **GridironIQ** backend (`src/gridironiq/`) exposes matchup prediction, scouting reports, and Python-native report endpoints. The **gridiron-intel** frontend (Lovable-generated) consumes these APIs for the Matchup Engine UI.
-
-### Running the backend
-
-From the project root:
+Generate front-office style PDFs from the CLI:
 
 ```bash
-uv run uvicorn gridironiq.api:app --reload --host 0.0.0.0 --port 8000
-```
-
-Or with `pip install -e .`:
-
-```bash
-uvicorn gridironiq.api:app --reload --port 8000
-```
-
-### Running the frontend
-
-From the `gridiron-intel` directory:
-
-```bash
-cd gridiron-intel && npm install && npm run dev
-```
-
-Set `VITE_API_BASE_URL=http://127.0.0.1:8000` if the API runs elsewhere.
-
-### Report types (Python-native)
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/matchup/run` | Run matchup prediction (win prob, score, keys). |
-| `POST /api/matchup/report` | Structured scouting report (summary, strengths, profiles). |
-| `POST /api/report/matchup` | Full matchup report: prediction + situational edges + offense vs defense + optional heatmap asset paths. |
-| `POST /api/report/broadcast` | Broadcast-style report: headline stats, talking points, top 3 storylines. |
-| `POST /api/report/presentation` | Presentation-style report: slides with bullets and key edges. |
-| `POST /api/report/situational` | Run/pass and situational tendency data only (no heatmaps). |
-
-Request body for report endpoints: `{ "season": 2024, "team_a": "GB", "team_b": "DET", "week": null, "mode": "opp_weighted", "generate_heatmaps": false }`.
-
-### From NFL_Report_Engine to GridironIQ
-
-An earlier version of this project used a separate R/Shiny app (`NFL_Report_Engine/`) to produce matchup reports, situational heatmaps, and broadcast-style outputs. Those ideas have been fully ported into Python.
-
-The **Python-native reports** in `src/gridironiq/reports/` now provide that functionality so the frontend can consume JSON (and optional PNG assets) from the GridironIQ API:
-
-- **Situational bucketing and tendencies** — `reports/situational.py`: down/distance and field-position buckets, run/pass tendency by situation, success rate, offense vs defense comparison.
-- **Heatmaps** — `reports/heatmaps.py`: run/pass tendency, success rate, matchup advantage, run direction, QB passing (location × depth). Outputs go to `outputs/reports/` with deterministic names.
-- **Matchup / broadcast / presentation** — `reports/matchup_report.py`, `broadcast_report.py`, `presentation_report.py`: full report JSON and media/slide-friendly summaries.
-
-See **MIGRATION_R_TO_PYTHON.md** for a detailed mapping of R features to Python modules, data dependencies, and migration status. There is no remaining runtime dependency on R; only a curated set of legacy PNGs is kept under `outputs/legacy_reports/` and `gridiron-intel/public/reports/` as design reference.
-
-## Draft Room Reports
-
-GridironIQ generates professional 8.5×11 PDF draft room reports matching the format used by NFL front offices.
-
-### Setup
-
-```bash
-pip install weasyprint
-```
-
-WeasyPrint requires system libraries on some platforms:
-
-- **macOS:** `brew install pango`
-- **Ubuntu:** `apt-get install libpango-1.0-0 libpangoft2-1.0-0`
-
-### Usage
-
-```bash
-python -m gridironiq.draft.pipeline \
-  --team [TEAM] \
-  --season [YEAR] \
-  --picks [PICK_SLOTS] \
+uv run python -m gridironiq.draft.pipeline \
+  --team CAR \
+  --season 2025 \
+  --picks 19 51 83 \
+  --top-n 10 \
   --report \
-  --report-type all
+  --report-type all \
+  --no-ai \
+  --report-output-dir outputs/reports/draft/
 ```
 
-### Report Types
+**WeasyPrint** needs OS libraries (e.g. **macOS:** `brew install pango`; **Ubuntu:** Pango/Cairo packages per [WeasyPrint docs](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html)).
 
-- **needs:** 1-page team need summary
-- **prospect:** 1-page prospect one-pager (`--prospect "Name Substring"` required)
-- **board:** full multi-page draft board
-- **all:** generates all three PDFs
-
-### AI Content
-
-Reports can use the **local Microsoft Phi-4 multimodal weights** loaded via `transformers` (`gridironiq.ai.phi4_provider`) when the model path is available and `--no-ai` is not set. There is no separate cloud API key in this repo.
-
-Use `--no-ai` for fully data-driven template content.
+| `--report-type` | Output |
+|-------------------|--------|
+| `needs` | Team need summary |
+| `prospect` | Single prospect card (`--prospect "Name"` required) |
+| `board` | Multi-page board |
+| `all` | All of the above |
 
 ---
 
-## Methodology Notes
+## API highlights
 
-- **Tie handling:** When a key is tied, it is explicitly labeled as TIE; neither team is forced a winner on that key.
-- **Big plays:** Pass ≥ 15 yards, rush ≥ 10 yards (configurable in `config.py`).
-- **Opponent meltdown dampener:** In `opp_weighted` mode, games where the opponent’s turnovers exceed a threshold are down-weighted so outlier giveaways don’t dominate the average.
-- **Availability:** The data layer reports readiness (GREEN / YELLOW / RED) based on required PBP columns for the 5 Keys pipeline.
+| Area | Examples |
+|------|----------|
+| Matchup | `POST /api/matchup/run`, `POST /api/matchup/report`, `POST /api/report/matchup` |
+| Schedule | Schedule list, game reports, prediction helpers |
+| Draft | `POST /api/draft/simulate`, `recommend`, `intelligence`, **`POST /api/draft/report`** |
+| Reports | Broadcast, presentation, situational, heatmap-related payloads |
 
----
-
-## Future Work
-
-- Improve score prediction calibration and uncertainty intervals.
-- Richer visuals: larger fonts, table layouts, no overlapping text.
-- Team rankings / percentiles in the explainer and slide assets.
-- Expanded scouting report export (e.g., PDF/PNG bundle).
-- Generalized matchup runner for any teams and years.
-- Model validation across past Super Bowls (backtesting).
-- Optional Streamlit/CLI for ad-hoc matchups without editing scripts.
+Static report assets can be mounted at **`/report-assets`** from `outputs/reports/` when running the API.
 
 ---
 
-I’m continuing to refine SuperBowlEngine as a reusable system for matchup-level prediction and QB impact, and to align it with how front offices separate signal from noise. The codebase is structured so new seasons and matchups can be run with minimal changes.
+## Team logos
+
+Logo PNGs live in **`teamlogo/`** and are mirrored under **`gridiron-intel/public/teamlogo/`** for the UI. Regenerate the manifest with:
+
+```bash
+python scripts/generate_team_logo_manifest.py
+```
+
+Sync copies into the frontend when needed:
+
+```bash
+python scripts/sync_team_logos_to_frontend.py
+```
+
+Details: **[docs/TEAM_LOGOS.md](docs/TEAM_LOGOS.md)**.
+
+---
+
+## Prediction methodology (Five Keys)
+
+The **Super Bowl / matchup engine** is built on five keys — **time of possession**, **turnovers**, **big plays**, **third-down efficiency**, and **red zone TD%** — with a **three-of-five** rule and **opponent-adjusted** weighting (SOS, defensive difficulty). A separate **QB production** lens scores postseason QB impact on drive sustainability, high-leverage downs, and off-script value, adjusted for defensive strength.
+
+The **team model** explains tilt at the game level; the **QB engine** explains how passing-game advantage shows up on the field. Tie keys are labeled explicitly; big-play thresholds and opponent meltdown dampening are configurable in the legacy `superbowlengine` config.
+
+---
+
+## Tests
+
+```bash
+uv run pytest tests/ -q
+```
+
+---
+
+## Repository history
+
+This project grew from an explainable **Super Bowl prediction** research codebase into **GridironIQ**: the same statistical core now powers a **full web product** with draft tooling and report APIs. Older R/Shiny workflows are retired; see **[MIGRATION_R_TO_PYTHON.md](MIGRATION_R_TO_PYTHON.md)** for feature mapping.
+
+---
+
+## License
+
+MIT (see `pyproject.toml`).

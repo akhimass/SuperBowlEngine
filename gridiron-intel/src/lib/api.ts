@@ -1,6 +1,22 @@
 import type { MatchupResult } from "@/data/mockData";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+/** Base URL for FastAPI (no trailing slash). Empty string = same origin (use with reverse proxy). */
+function resolveApiBaseUrl(): string {
+  const v = import.meta.env.VITE_API_BASE_URL;
+  if (typeof v === "string") {
+    const t = v.trim();
+    if (t.length > 0) return t.replace(/\/$/, "");
+    return "";
+  }
+  return "http://127.0.0.1:8000";
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
+
+function apiUrl(path: string): string {
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL}${path}`;
+}
 
 // --- Team logo manifest (GET) ---
 
@@ -19,7 +35,7 @@ export interface ApiTeamLogoManifest {
 }
 
 export async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`);
+  const res = await fetch(apiUrl(path));
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `Request to ${path} failed with status ${res.status}`);
@@ -161,7 +177,7 @@ export interface ApiAiExplanation {
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(apiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
