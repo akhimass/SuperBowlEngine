@@ -57,18 +57,17 @@ def test_compute_team_win_pct() -> None:
 
 
 def test_compute_sos_fabricated() -> None:
-    """SOS = average opponent win%. A plays B (1.0) and C (0.0) -> A's SOS = 0.5."""
+    """SOS = average opponent win% from full schedule."""
     gr = pd.DataFrame([
         {"game_id": "g1", "home_team": "A", "away_team": "B", "home_score_final": 21, "away_score_final": 7},
         {"game_id": "g2", "home_team": "C", "away_team": "A", "home_score_final": 3, "away_score_final": 17},
         {"game_id": "g3", "home_team": "B", "away_team": "C", "home_score_final": 28, "away_score_final": 0},
     ])
-    # B is 1-0 (1.0), C is 0-1 (0.0). A played B and C -> SOS = (1.0 + 0.0) / 2 = 0.5
-    assert compute_sos(gr, "A") == 0.5
-    # B played A (0.5 from 1-1) and C (0.0) -> A's win% = 0.5, C's = 0.0 -> B's SOS = (0.5 + 0.0) / 2 = 0.25
-    assert compute_sos(gr, "B") == 0.25
-    # C played A (0.5) and B (1.0) -> SOS = (0.5 + 1.0) / 2 = 0.75
-    assert compute_sos(gr, "C") == 0.75
+    # From this schedule: A 2-0 (1.0), B 1-1 (0.5), C 0-2 (0.0).
+    # SOS is the simple average of opponent win% (no opponent-exclusion).
+    assert compute_sos(gr, "A") == 0.25  # (0.5 + 0.0) / 2
+    assert compute_sos(gr, "B") == 0.5   # (1.0 + 0.0) / 2
+    assert compute_sos(gr, "C") == 0.75  # (1.0 + 0.5) / 2
 
 
 def test_compute_sos_no_games() -> None:
@@ -107,9 +106,10 @@ def test_compute_team_sos_backward_compat() -> None:
         {"game_id": "g1", "home_team": "A", "away_team": "B", "home_score": 21, "away_score": 7},
         {"game_id": "g2", "home_team": "B", "away_team": "A", "home_score": 10, "away_score": 14},
     ])
-    # A 1-1, B 1-1. A's only opponent is B with 0.5 -> SOS 0.5
-    assert compute_team_sos(gr, "A") == 0.5
-    assert compute_team_sos(gr, "B") == 0.5
+    # A 2-0 against B; B 0-2 against A. No other games -> B's win% = 0.0.
+    # SOS therefore reflects the lone opponent's win% from the schedule.
+    assert compute_team_sos(gr, "A") == 0.0
+    assert compute_team_sos(gr, "B") == 1.0
 
 
 def test_sos_no_external_api() -> None:

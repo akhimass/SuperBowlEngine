@@ -1,4 +1,4 @@
-"""DGI model (placeholder for future extension)."""
+"""DGI model stub reserved for future extension."""
 
 from typing import Any, Dict, Optional
 
@@ -12,7 +12,5 @@ def predict_dgi(
     _team_b_keys: TeamKeys,
     _pbp: Optional["pd.DataFrame"] = None,
 ) -> Dict[str, Any]:
-    """
-    Placeholder: DGI or other advanced model.
-    """
+    """Stub implementation: reserved for a future DGI or related model."""
     return {"predicted_winner": None, "scores": {}}

@@ -172,9 +172,9 @@ def predict_score(
 ) -> Dict[str, Any]:
     """
     Predict point differential and implied score from 5 Keys (and optional context).
-
+ 
     keys_a/keys_b are aggregated (e.g. opp_weighted) for the matchup.
-    If artifacts is None, returns a no-model placeholder (margin 0, total 45, high uncertainty).
+    If artifacts is None, returns a conservative default (margin 0, total 45) with large uncertainty.
     """
     ctx_a = context_a or TeamContext()
     ctx_b = context_b or TeamContext()
@@ -207,6 +207,14 @@ def predict_score(
         pred_total += sum(artifacts.total_coef[f] * vec[i] for i, f in enumerate(FEATURE_NAMES))
     margin_sd = artifacts.margin_std
     total_sd = artifacts.total_std
+    # Realism guards: clamp margin and total to plausible NFL ranges before reconstructing scores.
+    unclamped_margin = float(pred_margin)
+    unclamped_total = float(pred_total)
+    # Typical NFL totals live roughly between mid-20s and low-60s; clamp to [24, 62].
+    pred_total = max(24.0, min(62.0, pred_total))
+    # Typical margins rarely exceed 3–4 scores; clamp to [-24, 24].
+    pred_margin = max(-24.0, min(24.0, pred_margin))
+
     # Implied score: A_score + B_score = pred_total, A_score - B_score = pred_margin -> A = (total+margin)/2, B = (total-margin)/2
     a_score = (pred_total + pred_margin) / 2.0
     b_score = (pred_total - pred_margin) / 2.0
@@ -216,7 +224,13 @@ def predict_score(
         "predicted_margin": round(pred_margin, 1),
         "predicted_total": round(pred_total, 1),
         "predicted_score": {team_a_name: int(a_score), team_b_name: int(b_score)},
-        "score_ci": {"margin_sd": round(margin_sd, 2), "total_sd": round(total_sd, 2)},
+        "score_ci": {
+            "margin_sd": round(margin_sd, 2),
+            "total_sd": round(total_sd, 2),
+            "unclamped_margin": round(unclamped_margin, 1),
+            "unclamped_total": round(unclamped_total, 1),
+            "score_clamped": bool(unclamped_margin != pred_margin or unclamped_total != pred_total),
+        },
     }
 
 

@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 15% 8%;
+    --foreground: 220 10% 96%;
+
+    --card: 225 14% 10%;
+    --card-foreground: 220 10% 96%;
+
+    --popover: 225 14% 10%;
+    --popover-foreground: 220 10% 96%;
+
+    --primary: 6 70% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 225 12% 16%;
+    --secondary-foreground: 220 10% 85%;
+
+    --muted: 225 12% 14%;
+    --muted-foreground: 220 8% 55%;
+
+    --accent: 205 55% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 150 50% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 40 90% 55%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 225 12% 18%;
+    --input: 225 12% 18%;
+    --ring: 6 70% 45%;
+
+    --radius: 0.125rem;
+
+    --sidebar-background: 225 14% 10%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 6 70% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 225 12% 16%;
+    --sidebar-accent-foreground: 220 10% 85%;
+    --sidebar-border: 225 12% 18%;
+    --sidebar-ring: 6 70% 45%;
+
+    --font-display: 'Inter', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-serif: 'IBM Plex Serif', Georgia, serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.04em;
+    font-weight: 700;
+  }
+}
+
+@layer components {
+  .font-mono-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-serif-scout {
+    font-family: var(--font-serif);
+  }
+
+  .card-surface {
+    @apply bg-card border border-border rounded-sm;
+    box-shadow: 0 1px 0 0 rgba(255,255,255,0.04) inset;
+  }
+
+  .card-surface-elevated {
+    @apply bg-card border border-border rounded-sm;
+    box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5), 0 1px 0 0 rgba(255,255,255,0.06) inset;
+  }
+
+  .pill-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-sm;
+  }
+
+  .pill-offense {
+    @apply pill-badge bg-accent/15 text-accent;
+  }
+
+  .pill-defense {
+    @apply pill-badge bg-primary/15 text-primary;
+  }
+
+  .pill-qb {
+    @apply pill-badge bg-warning/15 text-warning;
+  }
+
+  .pill-success {
+    @apply pill-badge bg-success/15 text-success;
+  }
+
+  .pill-neutral {
+    @apply pill-badge bg-muted text-muted-foreground;
+  }
+
+  .rim-light {
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .text-gradient-hero {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(180deg, hsl(var(--foreground)) 0%, hsl(var(--muted-foreground)) 100%);
+  }
+}
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+}

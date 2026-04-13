@@ -50,6 +50,13 @@ This is the Team Outcome Engine scouting report for Super Bowl LX. It compares b
 | `scripts/make_qb_prod_card.py` | QB production strip and JSON reports for two QBs. |
 | `scripts/list_team_games.py` | List team games (postseason) for a given year. |
 | `scripts/inspect_nflreadpy_columns.py` | Inspect nflreadpy PBP columns for a season. |
+| `scripts/generate_team_logo_manifest.py` | Scan `teamlogo/` and write `outputs/team_logo_manifest.json`. See [Team logos](docs/TEAM_LOGOS.md). |
+
+---
+
+## Team logos
+
+The `teamlogo/` folder holds one logo per NFL team. A **manifest** maps team abbreviation → logo path so backend and frontend use the same asset. See **[docs/TEAM_LOGOS.md](docs/TEAM_LOGOS.md)** for filename format, how to regenerate the manifest, and how duplicates/unmatched files are handled. Regenerate with: `python scripts/generate_team_logo_manifest.py`. To serve logos in the frontend, run: `python scripts/sync_team_logos_to_frontend.py`.
 
 ---
 
@@ -87,6 +94,100 @@ export NFLREADPY_CACHE_DIR=~/.cache/nflreadpy
 ```
 
 Requirements: Python 3.9+, nflreadpy, pandas. Optional: streamlit, matplotlib, pytest.
+
+---
+
+## GridironIQ: Backend API & Frontend
+
+The **GridironIQ** backend (`src/gridironiq/`) exposes matchup prediction, scouting reports, and Python-native report endpoints. The **gridiron-intel** frontend (Lovable-generated) consumes these APIs for the Matchup Engine UI.
+
+### Running the backend
+
+From the project root:
+
+```bash
+uv run uvicorn gridironiq.api:app --reload --host 0.0.0.0 --port 8000
+```
+
+Or with `pip install -e .`:
+
+```bash
+uvicorn gridironiq.api:app --reload --port 8000
+```
+
+### Running the frontend
+
+From the `gridiron-intel` directory:
+
+```bash
+cd gridiron-intel && npm install && npm run dev
+```
+
+Set `VITE_API_BASE_URL=http://127.0.0.1:8000` if the API runs elsewhere.
+
+### Report types (Python-native)
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/matchup/run` | Run matchup prediction (win prob, score, keys). |
+| `POST /api/matchup/report` | Structured scouting report (summary, strengths, profiles). |
+| `POST /api/report/matchup` | Full matchup report: prediction + situational edges + offense vs defense + optional heatmap asset paths. |
+| `POST /api/report/broadcast` | Broadcast-style report: headline stats, talking points, top 3 storylines. |
+| `POST /api/report/presentation` | Presentation-style report: slides with bullets and key edges. |
+| `POST /api/report/situational` | Run/pass and situational tendency data only (no heatmaps). |
+
+Request body for report endpoints: `{ "season": 2024, "team_a": "GB", "team_b": "DET", "week": null, "mode": "opp_weighted", "generate_heatmaps": false }`.
+
+### From NFL_Report_Engine to GridironIQ
+
+An earlier version of this project used a separate R/Shiny app (`NFL_Report_Engine/`) to produce matchup reports, situational heatmaps, and broadcast-style outputs. Those ideas have been fully ported into Python.
+
+The **Python-native reports** in `src/gridironiq/reports/` now provide that functionality so the frontend can consume JSON (and optional PNG assets) from the GridironIQ API:
+
+- **Situational bucketing and tendencies** — `reports/situational.py`: down/distance and field-position buckets, run/pass tendency by situation, success rate, offense vs defense comparison.
+- **Heatmaps** — `reports/heatmaps.py`: run/pass tendency, success rate, matchup advantage, run direction, QB passing (location × depth). Outputs go to `outputs/reports/` with deterministic names.
+- **Matchup / broadcast / presentation** — `reports/matchup_report.py`, `broadcast_report.py`, `presentation_report.py`: full report JSON and media/slide-friendly summaries.
+
+See **MIGRATION_R_TO_PYTHON.md** for a detailed mapping of R features to Python modules, data dependencies, and migration status. There is no remaining runtime dependency on R; only a curated set of legacy PNGs is kept under `outputs/legacy_reports/` and `gridiron-intel/public/reports/` as design reference.
+
+## Draft Room Reports
+
+GridironIQ generates professional 8.5×11 PDF draft room reports matching the format used by NFL front offices.
+
+### Setup
+
+```bash
+pip install weasyprint
+```
+
+WeasyPrint requires system libraries on some platforms:
+
+- **macOS:** `brew install pango`
+- **Ubuntu:** `apt-get install libpango-1.0-0 libpangoft2-1.0-0`
+
+### Usage
+
+```bash
+python -m gridironiq.draft.pipeline \
+  --team [TEAM] \
+  --season [YEAR] \
+  --picks [PICK_SLOTS] \
+  --report \
+  --report-type all
+```
+
+### Report Types
+
+- **needs:** 1-page team need summary
+- **prospect:** 1-page prospect one-pager (`--prospect "Name Substring"` required)
+- **board:** full multi-page draft board
+- **all:** generates all three PDFs
+
+### AI Content
+
+Reports can use the **local Microsoft Phi-4 multimodal weights** loaded via `transformers` (`gridironiq.ai.phi4_provider`) when the model path is available and `--no-ai` is not set. There is no separate cloud API key in this repo.
+
+Use `--no-ai` for fully data-driven template content.
 
 ---
 

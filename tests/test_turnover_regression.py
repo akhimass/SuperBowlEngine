@@ -33,7 +33,8 @@ def test_expected_turnovers_clamp_ceil() -> None:
     # Very high rates -> cap at 2.2
     assert expected_turnovers(5.0, 5.0) == 2.2
     assert expected_turnovers(10.0, 10.0, ceil=3.0) == 3.0
-    assert expected_turnovers(1.0, 1.0, ceil=1.5) == 1.5
+    # When blend is below ceil, clamp should not fire.
+    assert expected_turnovers(1.0, 1.0, ceil=1.5) == 1.0
 
 
 def test_expected_turnovers_within_range() -> None:

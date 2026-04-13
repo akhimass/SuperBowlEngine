@@ -76,6 +76,7 @@ def zscore_sos(all_team_sos: Dict[str, float]) -> Dict[str, float]:
     """
     Convert SOS values to z-scores (mean 0, std 1) across teams.
     If there are 0 or 1 teams, returns the same values (no division by zero).
+    For 2 teams, we normalise to {-1, +1}.
     """
     if not all_team_sos:
         return {}
@@ -84,6 +85,17 @@ def zscore_sos(all_team_sos: Dict[str, float]) -> Dict[str, float]:
     mean = sum(vals) / n
     if n < 2:
         return {t: 0.0 for t in all_team_sos}
+    if n == 2:
+        out: Dict[str, float] = {}
+        for t, v in all_team_sos.items():
+            if v == mean:
+                out[t] = 0.0
+            elif v < mean:
+                out[t] = -1.0
+            else:
+                out[t] = 1.0
+        return out
+    # Sample variance / std for n >= 3
     variance = sum((x - mean) ** 2 for x in vals) / (n - 1)
     std = variance ** 0.5
     if std == 0:

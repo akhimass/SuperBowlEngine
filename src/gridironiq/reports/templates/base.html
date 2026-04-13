@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>{% block title %}{{ report_title | default('GridironIQ') }}{% endblock %}</title>
+  <style>
+    :root {
+      --giq-navy: #1a2744;
+      --giq-gold: #c9a84c;
+      --giq-danger: #c0392b;
+      --giq-warning: #e67e22;
+      --giq-success: #27ae60;
+      --giq-text: #444444;
+      --giq-bg-light: #f8f9fa;
+      --giq-muted: #6b7280;
+    }
+    @page {
+      size: 8.5in 11in;
+      margin: 0.5in;
+      @bottom-center {
+        content: "Page " counter(page) " — GridironIQ Draft Intelligence";
+        font-size: 8pt;
+        color: var(--giq-muted);
+      }
+    }
+    @media print {
+      body { font-size: 11pt; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+      font-size: 10pt;
+      color: var(--giq-text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.35;
+      background: var(--giq-bg-light);
+    }
+    .header-bar {
+      border-bottom: 3px solid var(--giq-gold);
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .brand {
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--giq-navy);
+      font-size: 11pt;
+    }
+    .brand-sub { color: var(--giq-gold); font-weight: 600; }
+    .header-meta { font-size: 9pt; color: var(--giq-text); margin-top: 4px; }
+    .page-break { page-break-after: always; }
+    .accent { color: var(--giq-gold); }
+    .navy { color: var(--giq-navy); }
+    .muted { color: var(--giq-muted); font-size: 8.5pt; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 8pt;
+      font-weight: 600;
+      background: var(--giq-navy);
+      color: #fff;
+    }
+    .badge-gold { background: var(--giq-gold); color: var(--giq-navy); }
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+<body>
+  <header class="header-bar">
+    <div class="brand">GRIDIRONIQ <span class="brand-sub">DRAFT INTELLIGENCE</span></div>
+    <div class="header-meta">
+      {% block header_title %}
+      <strong class="navy">{{ team_full_name | default(team) }}</strong>
+      — {{ report_title | default('Report') }}
+      <span class="muted">| Generated {{ generated_at }}</span>
+      {% endblock %}
+    </div>
+  </header>
+  {% block body %}{% endblock %}
+</body>
+</html>

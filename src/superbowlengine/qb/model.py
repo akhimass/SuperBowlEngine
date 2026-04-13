@@ -99,7 +99,7 @@ def compute_qb_metrics(qb: QBLine) -> Dict[str, float]:
     Derive rates and per-game values from QBLine.
 
     Returns: comp_pct, ypa, td_rate, int_rate, sack_rate, rush_ypc, rush_td_pg,
-             explosive_pass_pct (placeholder 0 if not from PBP), turnover_rate_pg.
+             explosive_pass_pct (currently 0 unless extended), turnover_rate_pg.
     """
     dropbacks = qb.att + safe_div(qb.sacks, 1)
     comp_pct = 100.0 * safe_div(qb.cmp, qb.att) if qb.att else 0.0

@@ -1,0 +1,16 @@
+__pycache__/
+.venv/
+node_modules/
+.DS_Store
+outputs/tmp/
+# Generated reports / predictions (regenerate locally; some JSON is very large)
+outputs/
+!outputs/team_logo_manifest.json
+
+# Local model checkout (too large for Git)
+Phi-4-multimodal-instruct/
+
+# Local secrets (never commit)
+.env
+.env.local
+

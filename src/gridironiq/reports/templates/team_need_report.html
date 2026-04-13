@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block extra_css %}
+    .top-section { min-height: 2.4in; }
+    .exec { font-size: 10.5pt; margin: 10px 0; text-align: justify; }
+    .needs-grid { margin-top: 8px; }
+    .need-row { margin-bottom: 10px; }
+    .need-label { font-weight: 700; font-size: 9pt; width: 36px; display: inline-block; }
+    .bar-track {
+      display: inline-block;
+      width: 72%;
+      height: 14px;
+      background: #e5e7eb;
+      vertical-align: middle;
+      margin: 0 6px;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .bar-fill { height: 100%; border-radius: 2px; display: block; }
+    .bar-red { background: #b91c1c; }
+    .bar-amber { background: #d97706; }
+    .bar-green { background: #15803d; }
+    .need-score { font-size: 9pt; font-weight: 600; min-width: 32px; display: inline-block; }
+    .room-line { font-size: 8pt; color: #4b5563; margin-left: 42px; margin-top: 2px; }
+    .scheme-3col { width: 100%; margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+    .scheme-3col table { width: 100%; border-collapse: collapse; }
+    .scheme-3col td { width: 33%; vertical-align: top; padding: 6px; border-right: 1px solid #e5e7eb; }
+    .scheme-3col td:last-child { border-right: none; }
+    .scheme-val { font-size: 14pt; font-weight: 800; color: #1a2744; }
+    .audit { margin-top: 12px; font-size: 8.5pt; }
+    .audit table { width: 100%; border-collapse: collapse; }
+    .audit th, .audit td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: left; }
+    .audit th { background: #f3f4f6; }
+{% endblock %}
+{% block body %}
+<div class="top-section">
+  <h1 class="navy" style="font-size:16pt;margin:0;">{{ team_full_name }} <span class="muted">({{ team }})</span></h1>
+  <p class="muted" style="margin:4px 0;">Season {{ season }} &mdash; Draft picks: {{ pick_slots | join(', ') }}</p>
+  <span class="badge badge-gold">Data Only | No Manual Priors</span>
+  <div class="exec">{{ executive_summary }}</div>
+</div>
+
+<div class="needs-grid">
+  <h2 class="navy" style="font-size:11pt;border-bottom:1px solid #c9a84c;padding-bottom:4px;">Positional need stack</h2>
+  {% for row in need_rows %}
+  <div class="need-row">
+    <span class="need-label">{{ row.pos }}</span>
+    <span class="need-score">{{ "%.1f"|format(row.score) }}</span>
+    <span class="bar-track"><span class="bar-fill {{ row.bar_class }}" style="width: {{ row.bar_pct }}%;"></span></span>
+    <div class="room-line">{{ row.room_summary }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="scheme-3col">
+  <table>
+    <tr>
+      <td>
+        <div class="muted">Pass rate</div>
+        <div class="scheme-val">{{ "%.1f"|format(scheme_pass_pct) }}%</div>
+        <div class="muted">identity</div>
+      </td>
+      <td>
+        <div class="muted">TE target share trend</div>
+        <div class="scheme-val">{{ te_trend_arrow }} {{ "%.4f"|format(te_trend_val) }}</div>
+        <div class="muted">3-year slope</div>
+      </td>
+      <td>
+        <div class="muted">EDGE pressure trend</div>
+        <div class="scheme-val">{{ edge_trend_arrow }} {{ "%.4f"|format(edge_trend_val) }}</div>
+        <div class="muted">3-year slope</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="audit">
+  <h2 class="navy" style="font-size:11pt;">Signal audit</h2>
+  <p class="muted">{{ signal_policy }}</p>
+  <table>
+    <thead><tr><th>Signal source</th><th>Weight</th><th>Contribution</th></tr></thead>
+    <tbody>
+      {% for r in signal_audit_rows %}
+      <tr><td>{{ r.signal_source }}</td><td>{{ r.weight }}</td><td>{{ r.contribution }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted" style="margin-top:6px;">Generated at {{ generated_at }} (UTC ISO).</p>
+</div>
+{% endblock %}

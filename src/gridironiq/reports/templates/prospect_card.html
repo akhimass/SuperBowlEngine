@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ card.name }} — Prospect Card{% endblock %}
+{% block extra_css %}
+    .hdr { background: #1a2744; color: #fff; padding: 12px 14px; margin: -0.25in -0.25in 12px -0.25in; }
+    .hdr h1 { margin: 0; font-size: 18pt; }
+    .hdr .sub { color: #c9a84c; font-size: 10pt; margin-top: 4px; }
+    .score-big { font-size: 28pt; font-weight: 900; }
+    .score-green { color: #15803d; }
+    .score-amber { color: #d97706; }
+    .score-red { color: #b91c1c; }
+    .cols { width: 100%; border-collapse: collapse; }
+    .cols td { vertical-align: top; padding: 6px; }
+    .w40 { width: 40%; }
+    .w25 { width: 25%; }
+    .w35 { width: 35%; }
+    .bar-row { margin-bottom: 8px; }
+    .bar-label { font-size: 8.5pt; font-weight: 700; }
+    .bar-track2 { width: 100%; height: 12px; background: #e5e7eb; border-radius: 2px; overflow: hidden; }
+    .bar-fill2 { height: 100%; background: #1a2744; }
+    .meas-table, .prod-table { width: 100%; font-size: 8.5pt; border-collapse: collapse; }
+    .meas-table th, .meas-table td, .prod-table th, .prod-table td { border: 1px solid #d1d5db; padding: 4px; }
+    .meas-table th, .prod-table th { background: #f3f4f6; }
+    .bullet-g::before { content: "● "; color: #15803d; }
+    .bullet-r::before { content: "● "; color: #b91c1c; }
+    .audit-mini { font-size: 7.5pt; color: #4b5563; margin-top: 14px; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+{% endblock %}
+{% block header_title %}
+<strong class="navy">{{ team_full_name | default(team) }}</strong> — Prospect one-pager
+<span class="muted">| {{ card.name }} | {{ generated_at }}</span>
+{% endblock %}
+{% block body %}
+<div class="hdr">
+  <h1>{{ card.name }}</h1>
+  <div class="sub">{{ card.position }} &mdash; {{ card.college }} ({{ card.conference }})</div>
+  <div class="sub">Ht {{ card.height }} &mdash; Wt {{ card.weight }} lb</div>
+  <div style="margin-top:8px;">Final draft score: <span class="score-big {{ score_class }}">{{ "%.1f"|format(card.final_draft_score) }}</span></div>
+</div>
+
+<table class="cols">
+  <tr>
+    <td class="w40">
+      <h3 class="navy" style="font-size:10pt;">Score breakdown</h3>
+      {% for b in score_bars %}
+      <div class="bar-row">
+        <div class="bar-label">{{ b.label }} — {{ "%.1f"|format(b.val) }}</div>
+        <div class="bar-track2"><div class="bar-fill2" style="width: {{ b.pct }}%;"></div></div>
+      </div>
+      {% endfor %}
+      {% if card.availability_pct is not none %}
+      <p class="muted" style="margin-top:8px;">Available at pick (sim): {{ "%.0f"|format(card.availability_pct) }}%</p>
+      {% endif %}
+    </td>
+    <td class="w25">
+      <h3 class="navy" style="font-size:10pt;">Measurables</h3>
+      <table class="meas-table">
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>40-yd</td><td>{{ meas.forty }}</td></tr>
+        <tr><td>Vertical</td><td>{{ meas.vertical }}</td></tr>
+        <tr><td>Broad</td><td>{{ meas.broad }}</td></tr>
+        <tr><td>Bench</td><td>{{ meas.bench }}</td></tr>
+        <tr><td>Ht / Wt</td><td>{{ card.height }} / {{ card.weight }}</td></tr>
+      </table>
+      <p class="muted" style="font-size:7.5pt;">Percentiles vs position use model athletic stack.</p>
+    </td>
+    <td class="w35">
+      <h3 class="navy" style="font-size:10pt;">College production</h3>
+      <table class="prod-table">
+        {% for row in prod_rows %}
+        <tr><th>{{ row.k }}</th><td>{{ row.v }}</td></tr>
+        {% endfor %}
+      </table>
+      <p style="margin-top:6px;"><span class="badge badge-gold">{{ conf_badge }}</span>
+        <span class="muted">Competition weight: {{ comp_weight }}</span></p>
+    </td>
+  </tr>
+</table>
+
+<h3 class="navy" style="font-size:10pt;margin-top:12px;">AI scouting (data-grounded)</h3>
+<p><strong>STRENGTHS</strong></p>
+<ul style="margin:0;padding-left:18px;">
+  {% for s in card.strengths %}<li class="bullet-g">{{ s }}</li>{% endfor %}
+</ul>
+<p><strong>WEAKNESSES</strong></p>
+<ul style="margin:0;padding-left:18px;">
+  {% for w in card.weaknesses %}<li class="bullet-r">{{ w }}</li>{% endfor %}
+</ul>
+<p><strong>NFL comp:</strong> {{ card.comp or '—' }}</p>
+<p><strong>Summary:</strong> {{ card.one_line or '—' }}</p>
+
+<div class="audit-mini">
+  <strong>Audit trail</strong><br/>
+  epa_need_z / room_z / snap_z: see fusion block in pipeline JSON.
+  {% if scheme_archetype %}<br/>Scheme: {{ scheme_archetype }} | fit {{ scheme_fit_detail }}{% endif %}
+  <br/>Sources: {{ data_sources }}
+</div>
+{% endblock %}
