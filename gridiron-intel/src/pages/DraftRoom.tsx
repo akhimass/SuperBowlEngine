@@ -10,7 +10,7 @@ import {
   aiChat,
   getTeamLogos,
 } from "@/lib/api.ts";
-import { useRmuData } from "@/lib/rmu.ts";
+import { matchRmu, useRmuData } from "@/lib/rmu.ts";
 import { useEngineData } from "@/lib/engine.ts";
 import DraftPlatformView from "./draft/DraftPlatformView.tsx";
 import {
@@ -18,6 +18,8 @@ import {
   type AnalyticsSubTab,
   type DraftRoomTab,
   type PosFilter,
+  type RmuHighlightFilter,
+  BIG_BOARD_TOP_N,
   DRAFT_CFB_SEASON,
   DRAFT_COMBINE_SEASON,
   DRAFT_EVAL_SEASON,
@@ -40,6 +42,7 @@ const NFL_TEAMS = [
 export default function DraftRoom() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [posFilter, setPosFilter] = useState<PosFilter>("ALL");
+  const [rmuHighlightFilter, setRmuHighlightFilter] = useState<RmuHighlightFilter>("ALL");
   const [boardViewTab, setBoardViewTab] = useState<BoardViewTab>("model_board");
   const [compareIdB, setCompareIdB] = useState<string | null>(null);
   const [prospectSearch, setProspectSearch] = useState("");
@@ -251,8 +254,15 @@ export default function DraftRoom() {
       );
     }
     rows = filterByBoardTab(rows, boardViewTab);
+    if (rmuHighlightFilter === "RMU_ONLY" && rmuQ.data) {
+      rows = rows.filter((r) => matchRmu(rmuQ.data, r.player_name));
+    }
+    const isBigBoard = roomTab === "big_board" || roomTab === "board";
+    if (isBigBoard && boardViewTab !== "r1_projections_tab") {
+      rows = [...rows].sort((a, b) => b.prospect_score - a.prospect_score).slice(0, BIG_BOARD_TOP_N);
+    }
     return rows;
-  }, [sortedBoardRows, posFilter, boardViewTab]);
+  }, [sortedBoardRows, posFilter, boardViewTab, roomTab, rmuHighlightFilter, rmuQ.data]);
 
   const prospectDbRows = useMemo(() => {
     const q = prospectSearch.trim().toLowerCase();
@@ -292,6 +302,8 @@ export default function DraftRoom() {
         setAnalyticsSub={setAnalyticsSub}
         posFilter={posFilter}
         setPosFilter={setPosFilter}
+        rmuHighlightFilter={rmuHighlightFilter}
+        setRmuHighlightFilter={setRmuHighlightFilter}
         boardViewTab={boardViewTab}
         setBoardViewTab={setBoardViewTab}
         board={boardQ.data}

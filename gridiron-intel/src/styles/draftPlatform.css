@@ -531,3 +531,9 @@
   font-weight: 700;
   color: var(--giq-text);
 }
+
+/* RMU-board matches on the big board + mock draft rows */
+.giq-board-row-rmu {
+  box-shadow: inset 3px 0 0 var(--giq-gold);
+  background: rgba(212, 168, 67, 0.04);
+}

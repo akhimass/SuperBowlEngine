@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { Loader2, RefreshCw, Search, Send } from "lucide-react";
 import {
   Radar,
@@ -34,16 +35,20 @@ import { pct, topFeatures } from "@/lib/engine.ts";
 import {
   buildMockDraftFullPoolRows,
   buildMockDraftSkillOnlyRows,
+  buildRmuMockLandings,
   findR1Overlay,
+  MOCK_DRAFT_3R_PICKS,
 } from "@/lib/mockDraftComposite.ts";
 import DraftSimulator from "../DraftSimulator.tsx";
 import type { AnalyticsSubTab, BoardViewTab, DraftRoomTab, PosFilter } from "./draftBoardUtils.ts";
 import {
+  BIG_BOARD_TOP_N,
   DRAFT_CFB_SEASON,
   DRAFT_COMBINE_SEASON,
   DRAFT_EVAL_SEASON,
   prospectPosPill,
 } from "./draftBoardUtils.ts";
+import type { RmuHighlightFilter } from "./draftBoardUtils.ts";
 import type { TableSortKey } from "./draftBoardUtils.ts";
 
 /** Training window for the RMU / SAC first-round model (historical draft classes). */
@@ -194,6 +199,8 @@ export interface DraftPlatformViewProps {
   setAnalyticsSub: (s: AnalyticsSubTab) => void;
   posFilter: PosFilter;
   setPosFilter: (f: PosFilter) => void;
+  rmuHighlightFilter: RmuHighlightFilter;
+  setRmuHighlightFilter: (f: RmuHighlightFilter) => void;
   boardViewTab: BoardViewTab;
   setBoardViewTab: (t: BoardViewTab) => void;
   board: ApiDraftBoard | undefined;
@@ -309,8 +316,8 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
           />
           <NavBtn
             icon="▣"
-            label="MOCK_DRAFT_R1"
-            badge="32"
+            label="MOCK_DRAFT_3R"
+            badge={String(MOCK_DRAFT_3R_PICKS)}
             active={canonicalRoom === "mock_draft"}
             onClick={() => p.setRoomTab("mock_draft")}
           />
@@ -473,7 +480,7 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
               onClick={() => p.setRoomTab("big_board")}
             />
             <RoomTabBtn
-              label="MOCK_DRAFT_R1"
+              label="MOCK_DRAFT_3R"
               active={canonicalRoom === "mock_draft"}
               onClick={() => p.setRoomTab("mock_draft")}
             />
@@ -583,10 +590,14 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
                   ? "PROSPECT_DB — LIVE nflverse BOARD (2026)"
                   : canonicalRoom === "team_view"
                     ? `TEAM_VIEW · ${p.team} · PICK ${p.pickNumber}`
-                    : "2026 NFL DRAFT — BIG_BOARD (R1 projections)"}
+                    : `2026 BIG_BOARD — TOP ${BIG_BOARD_TOP_N} PROSPECTS (MODEL)`}
               </div>
               <div className="giq-mh-sub">
-                {canonicalRoom === "team_view" ? `TEAM · ${p.team}` : "LIVE · GLOBAL"}
+                {canonicalRoom === "team_view"
+                  ? `TEAM · ${p.team}`
+                  : canonicalRoom === "big_board"
+                    ? `GLOBAL · prospect_score · max ${BIG_BOARD_TOP_N} rows · RMU filter: ${p.rmuHighlightFilter}`
+                    : "LIVE · GLOBAL"}
               </div>
             </div>
 
@@ -631,6 +642,16 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
                 onClick={() => p.setBoardViewTab("r1_projections_tab")}
               >
                 R1_ONLY
+              </button>
+              <button
+                type="button"
+                className={`giq-filter-pill ${p.rmuHighlightFilter === "RMU_ONLY" ? "giq-filter-pill-active" : ""}`}
+                onClick={() =>
+                  p.setRmuHighlightFilter(p.rmuHighlightFilter === "RMU_ONLY" ? "ALL" : "RMU_ONLY")
+                }
+                title="Show only prospects on the RMU/SAC first-round board (QB · WR · RB)"
+              >
+                RMU_BOARD
               </button>
             </div>
 
@@ -692,6 +713,7 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
                     const rank = row.model_rank ?? idx + 1;
                     const active = p.selectedId === row.player_id;
                     const rmu = matchRmu(p.rmuData, row.player_name);
+                    const rmuBoardHit = Boolean(rmu);
                     const reach = row.reach_risk;
                     const trend =
                       reach == null
@@ -716,6 +738,7 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
                     return (
                       <tr
                         key={row.player_id}
+                        className={rmuBoardHit ? "giq-board-row-rmu" : undefined}
                         onClick={() => p.setSelectedId(active ? null : row.player_id)}
                         style={{ background: active ? "rgba(212,168,67,0.08)" : undefined }}
                       >
@@ -1901,15 +1924,25 @@ function TeamNeedsStrip({
   );
 }
 
+type MockDraftSimState =
+  | { kind: "skip" }
+  | { kind: "board_loading" }
+  | {
+      kind: "ready";
+      fullPoolMode: boolean;
+      rowsFull: ReturnType<typeof buildMockDraftFullPoolRows> | null;
+      rowsSkill: ReturnType<typeof buildMockDraftSkillOnlyRows> | null;
+      rmuLandings: ReturnType<typeof buildRmuMockLandings>;
+      team_long_names: Record<string, string>;
+      tradeCount: number;
+      slotCount: number;
+      fullPool: ApiDraftProspect[] | null;
+    };
+
 /**
- * Round 1 mock: real ESPN pick order + either the **full** nflverse combine-class
- * board (all positions) or a QB/WR/RB-only fallback when the draft API is down.
- *
- * Full-pool scoring blends GridironIQ ``prospect_score`` (PBP / combine / CFB
- * when configured), consensus / market slotting, ESPN top-5 needs for the
- * **on-clock** team, positional-value priors (early picks lean QB/OT/EDGE per
- * historical capital curves), and the RMU P(R1) overlay on skill names that
- * match the hackathon board.
+ * Three-round mock (100 picks) with real ESPN order + full combine board when
+ * the API is available; RMU-only fallback stays at round 1 only. Includes an
+ * RMU landing table so every hackathon prospect shows mock slot vs R1 band.
  */
 function MockDraftPane({
   rmuData,
@@ -1924,6 +1957,56 @@ function MockDraftPane({
   boardLoading: boolean;
   boardError: Error | null;
 }) {
+  const draftSim = useMemo((): MockDraftSimState => {
+    if (!engineData?.nflDraft || !rmuData) return { kind: "skip" };
+    const { picks: allPicks, team_needs, team_long_names } = engineData.nflDraft;
+    const slots3r = allPicks.filter((p) => p.round <= 3);
+    const round1Only = allPicks.filter((p) => p.round === 1);
+    const trade3r = slots3r.filter((p) => p.via.length > 0).length;
+    const trade1r = round1Only.filter((p) => p.via.length > 0).length;
+    const r1Sorted = [...engineData.r1Board].sort(
+      (a, b) => (b.r1_probability ?? 0) - (a.r1_probability ?? 0),
+    );
+    const fullPool = board?.prospects && board.prospects.length > 0 ? board.prospects : null;
+    const fullPoolMode = Boolean(fullPool);
+    if (boardLoading && !fullPool) return { kind: "board_loading" };
+
+    if (fullPoolMode && fullPool) {
+      const rowsFull = buildMockDraftFullPoolRows(slots3r, team_needs, fullPool, engineData.r1Board);
+      const rmuLandings = buildRmuMockLandings(
+        engineData.r1Board,
+        rowsFull.map((r) => ({ slot: r.slot, selectedName: r.selected?.player_name ?? null })),
+      );
+      return {
+        kind: "ready",
+        fullPoolMode: true,
+        rowsFull,
+        rowsSkill: null,
+        rmuLandings,
+        team_long_names,
+        tradeCount: trade3r,
+        slotCount: slots3r.length,
+        fullPool,
+      };
+    }
+    const rowsSkill = buildMockDraftSkillOnlyRows(round1Only, team_needs, r1Sorted);
+    const rmuLandings = buildRmuMockLandings(
+      engineData.r1Board,
+      rowsSkill.map((r) => ({ slot: r.slot, selectedName: r.selected?.name ?? null })),
+    );
+    return {
+      kind: "ready",
+      fullPoolMode: false,
+      rowsFull: null,
+      rowsSkill,
+      rmuLandings,
+      team_long_names,
+      tradeCount: trade1r,
+      slotCount: round1Only.length,
+      fullPool: null,
+    };
+  }, [engineData, rmuData, board, boardLoading]);
+
   if (!engineData) {
     return (
       <div className="p-5 font-mono text-xs text-[#7d8fa8]">
@@ -1946,33 +2029,30 @@ function MockDraftPane({
       </div>
     );
   }
-  if (boardLoading && !(board?.prospects && board.prospects.length > 0)) {
+  if (draftSim.kind === "board_loading") {
     return (
       <div className="p-5 font-mono text-xs text-[#7d8fa8]">
         Loading nflverse combine-class board (full positional pool)…
       </div>
     );
   }
+  if (draftSim.kind !== "ready") {
+    return null;
+  }
 
-  const { picks: allPicks, team_needs, team_long_names } = engineData.nflDraft;
-  const round1 = allPicks.filter((p) => p.round === 1);
-  const fullPool = board?.prospects && board.prospects.length > 0 ? board.prospects : null;
-  const fullPoolMode = Boolean(fullPool);
-
-  const r1Sorted = [...engineData.r1Board].sort(
-    (a, b) => (b.r1_probability ?? 0) - (a.r1_probability ?? 0),
-  );
-
-  const rowsFull = fullPoolMode
-    ? buildMockDraftFullPoolRows(round1, team_needs, fullPool!, engineData.r1Board)
-    : null;
-  const rowsSkill = !fullPoolMode
-    ? buildMockDraftSkillOnlyRows(round1, team_needs, r1Sorted)
-    : null;
+  const {
+    fullPoolMode,
+    rowsFull,
+    rowsSkill,
+    rmuLandings,
+    team_long_names,
+    tradeCount,
+    slotCount,
+    fullPool,
+  } = draftSim;
 
   const rows = rowsFull ?? rowsSkill!;
   const fits = rows.filter((r) => r.fitRank !== null).length;
-  const tradeCount = round1.filter((p) => p.via.length > 0).length;
 
   const byPos: Record<string, number> = {};
   for (const r of rows) {
@@ -1990,6 +2070,10 @@ function MockDraftPane({
 
   const poolLabel = fullPoolMode ? fullPool!.length : engineData.r1Board.length;
   const boardTeam = board?.team;
+  const r1InMock = rmuLandings.filter((x) => x.band === "IN_R1").length;
+  const slipCount = rmuLandings.filter(
+    (x) => x.model_r1_flag && x.mock_overall != null && x.mock_overall > 32,
+  ).length;
 
   return (
     <div className="space-y-4 border-b border-white/[0.06] p-4">
@@ -1999,20 +2083,21 @@ function MockDraftPane({
           did not load
           {boardError ? ` (${boardError.message})` : ""}. Showing the 42-name RMU QB/WR/RB pool
           only. Start the GridironIQ API (
-          <span className="text-[#7d8fa8]">VITE_API_BASE_URL</span>) so MOCK_DRAFT can simulate the
-          **entire combine class** (OL, EDGE, DB, etc.) with the same scoring stack.
+          <span className="text-[#7d8fa8]">VITE_API_BASE_URL</span>) so MOCK_DRAFT_3R can simulate
+          **{MOCK_DRAFT_3R_PICKS} picks** (rounds 1–3) across the full combine class.
         </div>
       )}
 
       <div className="giq-module-header border-t-0">
         <div className="giq-mh-title">
-          <span>//</span> 2026 NFL DRAFT · MOCK · ROUND_1
+          <span>//</span> 2026 NFL DRAFT · MOCK · ROUNDS_1–3
         </div>
         <div className="font-mono text-[10px] uppercase tracking-wider text-[#7d8fa8]">
-          real order · {tradeCount} trades ·{" "}
+          {fullPoolMode ? `${slotCount} picks` : "32 picks (R1 only fallback)"} · {tradeCount} trades
+          ·{" "}
           {fullPoolMode
             ? "FULL_POOL · nflverse + consensus + needs + positional value + RMU overlay"
-            : "RMU SKILL POOL ONLY (API unavailable)"}
+            : "RMU SKILL POOL (API unavailable)"}
         </div>
       </div>
 
@@ -2030,6 +2115,18 @@ function MockDraftPane({
           <div className="giq-kpi-delta">NAMES_MATCH_R1_BOARD</div>
         </div>
         <div className="giq-kpi-item">
+          <div className="giq-kpi-label">RMU_IN_R1</div>
+          <div className="giq-kpi-value text-[22px] text-[#d4a843]">
+            {r1InMock}/{rmuLandings.length}
+          </div>
+          <div className="giq-kpi-delta">LAND_TOP32_IN_MOCK</div>
+        </div>
+        <div className="giq-kpi-item">
+          <div className="giq-kpi-label">SLIP</div>
+          <div className="giq-kpi-value text-[22px] text-[#f0c060]">{slipCount}</div>
+          <div className="giq-kpi-delta">MODEL_R1_BUT_MOCK_AFTER_32</div>
+        </div>
+        <div className="giq-kpi-item">
           <div className="giq-kpi-label">NEED_FITS</div>
           <div className="giq-kpi-value text-[22px] text-[#d4a843]">
             {fits}/{rows.length}
@@ -2041,7 +2138,7 @@ function MockDraftPane({
           <div className="giq-kpi-value text-[22px] text-[#d4a843]">
             {(byPos["QB"] ?? 0)} · {(byPos["WR"] ?? 0)} · {(byPos["RB"] ?? 0)}
           </div>
-          <div className="giq-kpi-delta">R1_SELECTIONS</div>
+          <div className="giq-kpi-delta">PICKS_IN_MOCK</div>
         </div>
         <div className="giq-kpi-item">
           <div className="giq-kpi-label">NO. 1_OVERALL</div>
@@ -2058,10 +2155,59 @@ function MockDraftPane({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded border border-white/[0.06]">
+        <div className="giq-module-header border-0 border-b border-white/[0.06]">
+          <div className="giq-mh-title">
+            <span>//</span> {`RMU_LANDING · VS_${fullPoolMode ? "3R" : "R1"}_MOCK`}
+          </div>
+          <div className="font-mono text-[10px] uppercase tracking-wider text-[#7d8fa8]">
+            every hackathon prospect · mock slot · in R1 band vs rounds 2–3 · slips
+          </div>
+        </div>
         <table className="giq-board-table w-full">
           <thead className="giq-board-thead">
             <tr>
+              <th className="text-left">PLAYER</th>
+              <th className="text-left">POS</th>
+              <th className="text-right">P(R1)</th>
+              <th className="text-left">MOCK</th>
+              <th className="text-left">BAND</th>
+              <th className="text-left">SLIP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rmuLandings.map((lm) => {
+              const slip =
+                lm.model_r1_flag && lm.mock_overall != null && lm.mock_overall > 32 ? "YES" : "—";
+              const bandLabel =
+                lm.band === "IN_R1" ? "R1" : lm.band === "R2_R3" ? "R2–R3" : "OUT";
+              return (
+                <tr
+                  key={lm.name}
+                  className={`giq-board-row ${lm.band === "IN_R1" ? "giq-board-row-rmu" : ""}`}
+                >
+                  <td className="font-semibold text-[#dde4ef]">{lm.name}</td>
+                  <td className="font-mono text-[10px] text-[#7d8fa8]">{lm.position}</td>
+                  <td className="text-right font-mono text-[#d4a843]">
+                    {lm.r1_probability != null ? `${(lm.r1_probability * 100).toFixed(0)}%` : "—"}
+                  </td>
+                  <td className="font-mono text-[10px] text-[#7d8fa8]">
+                    {lm.mock_overall != null ? `#${lm.mock_overall} · ${lm.mock_team ?? ""}` : "—"}
+                  </td>
+                  <td className="font-mono text-[10px] text-[#dde4ef]">{bandLabel}</td>
+                  <td className="font-mono text-[10px] text-[#f0c060]">{slip}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="max-h-[min(70vh,780px)] overflow-auto overflow-x-auto rounded border border-white/[0.06]">
+        <table className="giq-board-table w-full">
+          <thead className="giq-board-thead">
+            <tr>
+              <th className="text-left">RD</th>
               <th className="text-left">PICK</th>
               <th className="text-left">TEAM · NEEDS</th>
               <th className="text-left">SELECTION</th>
@@ -2086,7 +2232,13 @@ function MockDraftPane({
                   const viaBadge =
                     slot.via.length > 0 ? `via ${slot.via.join(" → ")}` : null;
                   return (
-                    <tr key={slot.overall} className="giq-board-row">
+                    <tr
+                      key={slot.overall}
+                      className={`giq-board-row ${r1Overlay ? "giq-board-row-rmu" : ""}`}
+                    >
+                      <td className="font-mono text-[10px] text-[#7d8fa8]">
+                        R{slot.round}·{String(slot.pick_in_round).padStart(2, "0")}
+                      </td>
                       <td className="font-mono text-[#d4a843]">
                         {String(slot.overall).padStart(2, "0")}
                       </td>
@@ -2164,7 +2316,10 @@ function MockDraftPane({
                   const viaBadge =
                     slot.via.length > 0 ? `via ${slot.via.join(" → ")}` : null;
                   return (
-                    <tr key={slot.overall} className="giq-board-row">
+                    <tr key={slot.overall} className={`giq-board-row ${selected ? "giq-board-row-rmu" : ""}`}>
+                      <td className="font-mono text-[10px] text-[#7d8fa8]">
+                        R{slot.round}·{String(slot.pick_in_round).padStart(2, "0")}
+                      </td>
                       <td className="font-mono text-[#d4a843]">
                         {String(slot.overall).padStart(2, "0")}
                       </td>
@@ -2244,21 +2399,19 @@ function MockDraftPane({
         Pick order follows the published 2026 NFL draft (trades + compensatory picks).{" "}
         {fullPoolMode ? (
           <>
-            Each selection scores every remaining combine invitee using: (1) GridironIQ
-            prospect_score (nflverse PBP / snaps / injuries / combine, plus CFBD production when
-            keyed), (2) consensus / market slotting when ranks exist, else model rank, (3) ESPN
-            top-5 needs for the <em>on-clock</em> club, (4) positional-value priors that mirror
-            historical round-one capital (QB/OT/EDGE premium early; RB discounted), and (5) the
-            RMU ensemble P(R1) overlay on QB/WR/RB names that match the hackathon board. Raw
-            grades in this session were computed with the API team context{" "}
-            <span className="text-[#d4a843]">{boardTeam ?? "—"}</span>
-            — only the on-clock need list and pick order change per slot; divisional “arms race”
-            boosts still need a per-team context pass server-side.
+            Runs <strong>{MOCK_DRAFT_3R_PICKS} consecutive slots</strong> (rounds 1–3). Each pick
+            scores every remaining combine invitee using: (1) GridironIQ prospect_score, (2)
+            consensus / market slotting, (3) ESPN top-5 needs for the <em>on-clock</em> team, (4)
+            positional-value priors, (5) RMU P(R1) overlay on matching QB/WR/RB names. The RMU
+            landing table compares every hackathon prospect to that mock: <strong>SLIP</strong> means
+            the discrete R1 classifier flagged round-one but this composite mock took them after
+            pick 32. Grades were built under API team context{" "}
+            <span className="text-[#d4a843]">{boardTeam ?? "—"}</span>.
           </>
         ) : (
           <>
-            Fallback mode ranks only the 42 RMU test prospects by P(R1) plus ESPN need fit — not
-            representative of the full draft class.
+            Fallback uses only the 42-name RMU pool for <strong>round 1</strong> (32 picks). Enable
+            the draft API for the full {MOCK_DRAFT_3R_PICKS}-pick three-round simulation.
           </>
         )}
       </p>

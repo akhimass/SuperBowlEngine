@@ -134,12 +134,16 @@ export interface MockDraftPickRowFull {
   r1Overlay: R1BoardRow | undefined;
 }
 
+/** Rounds 1–3 pick count in the encoded 2026 order (32 + 32 + 36). */
+export const MOCK_DRAFT_3R_PICKS = 100;
+
 /**
- * Simulate Round 1 using the **full** combine-class board. Each selection is
- * the highest composite score among players not yet taken.
+ * Simulate each draft slot (typically rounds 1–3) using the **full**
+ * combine-class board. Each selection is the highest composite score among
+ * players not yet taken.
  */
 export function buildMockDraftFullPoolRows(
-  round1Slots: NflDraftPick[],
+  slots: NflDraftPick[],
   teamNeeds: Record<string, string[]>,
   allProspects: ApiDraftProspect[],
   r1Board: R1BoardRow[],
@@ -149,7 +153,7 @@ export function buildMockDraftFullPoolRows(
   const taken = new Set<string>();
   const out: MockDraftPickRowFull[] = [];
 
-  for (const slot of round1Slots) {
+  for (const slot of slots) {
     const needs = teamNeeds[slot.team] ?? [];
     const pool = allProspects.filter((p) => !taken.has(p.player_id));
     const scored = pool.map((cand) => {
@@ -184,6 +188,57 @@ export function buildMockDraftFullPoolRows(
     });
   }
   return out;
+}
+
+export interface RmuMockLanding {
+  name: string;
+  position: string;
+  r1_probability: number | null;
+  confidence: string | null;
+  model_r1_flag: boolean | null;
+  mock_overall: number | null;
+  mock_round: number | null;
+  mock_team: string | null;
+  /** Selected in rounds 1–3 mock; overall slot vs first round. */
+  band: "IN_R1" | "R2_R3" | "OUT";
+}
+
+/** For every RMU-board prospect, where the 3-round composite mock took them. */
+export function buildRmuMockLandings(
+  r1Board: R1BoardRow[],
+  picks: Array<{ slot: NflDraftPick; selectedName: string | null }>,
+): RmuMockLanding[] {
+  const hit = new Map<
+    string,
+    { overall: number; round: number; team: string }
+  >();
+  for (const { slot, selectedName } of picks) {
+    if (!selectedName) continue;
+    hit.set(normalizeName(selectedName), {
+      overall: slot.overall,
+      round: slot.round,
+      team: slot.team,
+    });
+  }
+  return r1Board.map((prospect) => {
+    const h = hit.get(normalizeName(prospect.name));
+    const mock_overall = h?.overall ?? null;
+    let band: RmuMockLanding["band"];
+    if (mock_overall == null) band = "OUT";
+    else if (mock_overall <= 32) band = "IN_R1";
+    else band = "R2_R3";
+    return {
+      name: prospect.name,
+      position: prospect.position,
+      r1_probability: prospect.r1_probability ?? null,
+      confidence: prospect.confidence ?? null,
+      model_r1_flag: prospect.r1_predicted === 1,
+      mock_overall,
+      mock_round: h?.round ?? null,
+      mock_team: h?.team ?? null,
+      band,
+    };
+  });
 }
 
 /** Skill-only fallback (RMU rows) — same need-weighting as before. */

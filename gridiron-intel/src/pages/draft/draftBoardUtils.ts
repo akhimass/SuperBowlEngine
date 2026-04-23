@@ -57,8 +57,8 @@ export function sortProspects(rows: ApiDraftProspect[], key: TableSortKey, dir: 
 /** Primary draft room surface (tabs in the main column).
  *
  * - `big_board` — Global 2026 R1 projections (no team context).
- * - `mock_draft` — Full 32-pick R1 mock (real 2026 order) using the nflverse
- *   combine-class board when the API is up, else RMU QB/WR/RB fallback.
+ * - `mock_draft` — Three-round mock (100 picks, real 2026 order) using the
+ *   nflverse combine-class board when the API is up, else R1-only RMU fallback.
  * - `simulator` — Interactive live simulation.
  * - `team_view` — Team-selectable big board + team mock + trade scan + analyst.
  * - `prospect_db` — Searchable prospect database.
@@ -158,6 +158,12 @@ export function isLegacyDraftModule(s: string | null): s is LegacyDraftModule {
 }
 
 export type PosFilter = "ALL" | "QB" | "WR" | "RB" | "EDGE_DL" | "OT_IOL" | "DB_LB" | "TE" | "CB" | "S" | "LB";
+
+/** When set to RMU_ONLY, big board / team views show only names on the RMU board. */
+export type RmuHighlightFilter = "ALL" | "RMU_ONLY";
+
+/** Cap rows on the global big board (by prospect_score) for performance. */
+export const BIG_BOARD_TOP_N = 200;
 
 export type BoardViewTab =
   | "consensus_board"
