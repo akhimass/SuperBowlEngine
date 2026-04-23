@@ -8,6 +8,7 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: nflreadpy>=0.1.0
+Requires-Dist: pyarrow>=14.0.0
 Requires-Dist: pandas>=2.0.0
 Requires-Dist: scikit-learn>=1.0.0
 Requires-Dist: fastapi>=0.110.0

@@ -13,6 +13,8 @@ authors = [{ name = "SuperBowlEngine" }]
 dependencies = [
     "python-dotenv>=1.0.0",
     "nflreadpy>=0.1.0",
+    # nflreadpy returns Polars; to_pandas() / parquet paths expect pyarrow at runtime.
+    "pyarrow>=14.0.0",
     "pandas>=2.0.0",
     "scikit-learn>=1.0.0",
     "fastapi>=0.110.0",
