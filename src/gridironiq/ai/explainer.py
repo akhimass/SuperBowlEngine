@@ -5,7 +5,6 @@ import os
 from typing import Any, Dict, Optional
 
 from ..matchup_engine import MatchupResult
-from .phi4_provider import Phi4Provider
 from .schemas import AIExplanationResult, ExplainerContext
 from .template_provider import TemplateProvider
 
@@ -44,6 +43,8 @@ def build_explainer_context(
 
 def _select_provider(mode: str):
     if mode == "phi4":
+        from .phi4_provider import Phi4Provider
+
         return Phi4Provider()
     return TemplateProvider()
 

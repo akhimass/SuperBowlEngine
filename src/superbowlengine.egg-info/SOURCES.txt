@@ -3,6 +3,7 @@ pyproject.toml
 src/gridironiq/__init__.py
 src/gridironiq/api.py
 src/gridironiq/backtest_engine.py
+src/gridironiq/cache.py
 src/gridironiq/matchup_engine.py
 src/gridironiq/pipeline_cache.py
 src/gridironiq/qb_production_engine.py
@@ -19,6 +20,7 @@ src/gridironiq/ai/template_provider.py
 src/gridironiq/assets/__init__.py
 src/gridironiq/assets/team_logos.py
 src/gridironiq/draft/__init__.py
+src/gridironiq/draft/adp_tiers.py
 src/gridironiq/draft/cfb_client.py
 src/gridironiq/draft/cfb_schools.py
 src/gridironiq/draft/cfb_stats.py
@@ -26,6 +28,8 @@ src/gridironiq/draft/consensus.py
 src/gridironiq/draft/decision_engine.py
 src/gridironiq/draft/draft_board.py
 src/gridironiq/draft/loaders.py
+src/gridironiq/draft/offseason_context.py
+src/gridironiq/draft/pick_value.py
 src/gridironiq/draft/pipeline.py
 src/gridironiq/draft/player_model.py
 src/gridironiq/draft/positions.py
@@ -37,11 +41,15 @@ src/gridironiq/draft/team_context.py
 src/gridironiq/draft/team_needs.py
 src/gridironiq/draft/trade_simulator.py
 src/gridironiq/models/__init__.py
+src/gridironiq/models/data_pipeline.py
+src/gridironiq/models/first_round_model.py
 src/gridironiq/models/fit_margin_model.py
 src/gridironiq/models/fit_total_model.py
 src/gridironiq/models/fit_win_prob_model.py
 src/gridironiq/models/margin_model.py
 src/gridironiq/models/matchup_features.py
+src/gridironiq/models/rmu_predictions.py
+src/gridironiq/models/rmu_visualizations.py
 src/gridironiq/models/total_model.py
 src/gridironiq/models/training_data.py
 src/gridironiq/models/win_prob_model.py
@@ -114,9 +122,11 @@ tests/test_keys.py
 tests/test_matchup_report.py
 tests/test_model.py
 tests/test_model_artifacts.py
+tests/test_offseason_context.py
 tests/test_professor_rule_consistency.py
 tests/test_qb_turnover_attribution.py
 tests/test_reports.py
+tests/test_rmu_model.py
 tests/test_score_model_realism.py
 tests/test_situational_reports.py
 tests/test_sos.py

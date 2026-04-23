@@ -9,231 +9,83 @@ Description-Content-Type: text/markdown
 Requires-Dist: python-dotenv>=1.0.0
 Requires-Dist: nflreadpy>=0.1.0
 Requires-Dist: pandas>=2.0.0
-Requires-Dist: streamlit>=1.28.0
-Requires-Dist: matplotlib>=3.5.0
 Requires-Dist: scikit-learn>=1.0.0
 Requires-Dist: fastapi>=0.110.0
 Requires-Dist: uvicorn[standard]>=0.27.0
-Requires-Dist: transformers>=4.40.0
-Requires-Dist: torch>=2.2.0
 Requires-Dist: weasyprint>=60.0
 Requires-Dist: jinja2>=3.1.0
+Provides-Extra: streamlit
+Requires-Dist: streamlit>=1.28.0; extra == "streamlit"
+Provides-Extra: phi4
+Requires-Dist: torch>=2.2.0; extra == "phi4"
+Requires-Dist: transformers>=4.40.0; extra == "phi4"
+Provides-Extra: plots
+Requires-Dist: matplotlib>=3.5.0; extra == "plots"
+Provides-Extra: training
+Requires-Dist: xgboost>=2.0.0; extra == "training"
+Requires-Dist: matplotlib>=3.5.0; extra == "training"
+Provides-Extra: all
+Requires-Dist: streamlit>=1.28.0; extra == "all"
+Requires-Dist: matplotlib>=3.5.0; extra == "all"
+Requires-Dist: xgboost>=2.0.0; extra == "all"
+Requires-Dist: torch>=2.2.0; extra == "all"
+Requires-Dist: transformers>=4.40.0; extra == "all"
 Provides-Extra: dev
 Requires-Dist: pytest>=7.0.0; extra == "dev"
 Requires-Dist: ruff>=0.1.0; extra == "dev"
+Requires-Dist: matplotlib>=3.5.0; extra == "dev"
+Requires-Dist: xgboost>=2.0.0; extra == "dev"
 
-# SuperBowlEngine – Super Bowl LX Prediction & QB Production Model
+# GridironIQ — NFL Draft Intelligence (RMU SAC)
 
-I built SuperBowlEngine to predict Super Bowl outcomes and quarterback impact using a multi-engine pipeline inspired by front-office decision support. It combines team-level keys, opponent-adjusted weighting, and a separate QB production engine into win probabilities, score projections, and scouting-style visuals.
+**GridironIQ** is a first-round–centric draft intelligence stack built for the **RMU Sports Analytics Conference (SAC)** submission track: combine **structured prospect modeling**, **team need signals** from NFL usage and roster context, **Monte Carlo availability** at a given pick, and a **decision-room interface** that presents the board, levered recommendations, and optional analyst narrative in one place.
 
-**If you came here from LinkedIn,** this project is also summarized under my Projects section there.
-
----
-
-## How the Model Works
-
-### Team Outcome Engine (5 Keys)
-
-The team engine is built on five keys: **Time of Possession**, **Turnovers**, **Big Plays**, **3rd Down Efficiency**, and **Red Zone TD%**. The predictive framework uses a “3-of-5 keys” rule: winning at least three of these five is a strong historical predictor of who wins the game. The model compares both teams on each key and combines the margins into a single win probability.
-
-Playoff performance is **opponent-adjusted** using regular-season defensive strength (SOS and defensive difficulty), so beating a tough defense is weighted more than beating a weak one. Keys can be aggregated with **postseason vs regular-season context**—e.g., opponent-weighted postseason averages with optional dampening for opponent turnover meltdowns—so the evaluation reflects who you played and when.
-
-### Quarterback Production Engine
-
-The QB engine does **not** use box-score totals. It scores postseason quarterback impact on three dimensions: **drive sustainability** (converting and avoiding negative plays), **high-leverage execution** (third down and red zone), and **off-script value** (scrambles and extended plays). Each component is **adjusted for defensive difficulty** using regular-season EPA allowed (or a success-based fallback), so performance against elite defenses is weighted appropriately.
-
-**The team-level model explains why the game tilts one way; the QB production engine explains how that advantage is created on the field.**
+The product story is not generic scouting software—it is an **integrated draft desk**: what the class looks like for *your* team at *your* pick, how consensus and model order disagree (reach risk), where trading down moves the needle, and how a Round‑1 simulator behaves when other clubs follow need-aware heuristics.
 
 ---
 
-## Example Scouting Report Output
+## RMU SAC angle: first-round prediction & decision support
 
-![Team Outcome Engine scouting report](outputs/slide5_explainer.png)
+The submission emphasizes **Round 1** as the highest-leverage allocation window: scarce capital, compressed information, and cascading option value. GridironIQ Draft addresses that with:
 
-This is the Team Outcome Engine scouting report for Super Bowl LX. It compares both teams across the five keys and shows key winners, margins, and contextual drivers (e.g., opponent difficulty and top contributors). The format is designed for clarity and slide-ready presentation, not dense charts.
+- **Big board & grades** — Prospects are scored from nflverse combine and career tables, with optional college production enrichment when CollegeFootballData.com (CFBD) is configured. External consensus boards can be blended when `GRIDIRONIQ_DRAFT_CONSENSUS_DIR` is populated, so “market” order and model order can be compared explicitly.
+- **Team needs** — Need scores are derived from EPA, snap, injury pressure, room production, and similar signal layers, with hooks for offseason move metadata (tags, pick-slot shifts, documented sources) so the board reflects *current* roster pressure—not a static depth chart label.
+- **Availability & levered picks** — Simulations draw from the ordered board with temperature-controlled randomness to estimate who is still on the board at pick *k*; recommendations surface **levered** value (grade × realistic availability), not just raw rank.
+- **Round 1 mock** — A browser-only Round 1 exercise (32 picks) uses the same narrative class as the reference board: user club on the clock, need tags, AI-style projections for opponents, and post-pick grading vs the model’s lean—useful as a teaching and demo surface for the conference audience.
 
----
-
-## Outputs
-
-- **Win probabilities** (e.g., SEA vs NE) from the Professor Keys engine.
-- **Score prediction** from a regression on key margins (display only; win probability is keys-based).
-- **Visual scouting-style reports**: tables and cards (e.g., slide5 prediction, explainer, QB production strip) saved under `outputs/`, not raw charts.
+Together, these pieces support the hackathon narrative: **data → model → uncertainty → decision**, with the UI making the pipeline legible without requiring the judges to read code.
 
 ---
 
-## Repository Tour
+## What “draft intelligence” includes here
 
-| Area | Purpose |
-|------|---------|
-| `src/superbowlengine/models/` | Team outcome engine: `predict`, `predict_from_keys`, score model, turnover regression. |
-| `src/superbowlengine/data/` | nflreadpy-based PBP and schedule loading; availability checks. |
-| `src/superbowlengine/features/` | Per-game keys, opponent weighting, SOS, keys pipeline. |
-| `src/superbowlengine/viz/` | Slide5 prediction and explainer visuals; QB production card. |
-| `scripts/run_and_make_slide5.py` | Full pipeline: load data, compute keys, predict, render slide 5 + JSON. |
-| `scripts/make_qb_prod_card.py` | QB production strip and JSON reports for two QBs. |
-| `scripts/list_team_games.py` | List team games (postseason) for a given year. |
-| `scripts/inspect_nflreadpy_columns.py` | Inspect nflreadpy PBP columns for a season. |
-| `scripts/generate_team_logo_manifest.py` | Scan `teamlogo/` and write `outputs/team_logo_manifest.json`. See [Team logos](docs/TEAM_LOGOS.md). |
+| Theme | Description |
+|--------|-------------|
+| **Board** | Sortable prospect table: model rank, consensus, reach risk, market-style scores, and team-specific final grades. |
+| **Needs & scheme** | Positional need scores and scheme-fit components feed the same radar-style breakdown the model sees. |
+| **Intel & modes** | Beyond a single “best player” list: multiple ranking modes (e.g. best player available, best fit, upside, safety) grounded in the same simulation draw. |
+| **Trade exploration** | Trade-down scan summarizes expected-value style deltas across target slots (approximate independence assumptions; useful for relative ordering). |
+| **Reports** | PDF-oriented draft outputs (team needs, full board, prospect card) for a front-office style artifact suitable for a conference appendix. |
+
+The codebase also retains broader GridironIQ capabilities (matchup engine, schedule tooling, etc.), but **this README is scoped to the draft / RMU SAC story** above.
 
 ---
 
-## Team logos
+## Data & modeling stance (informational)
 
-The `teamlogo/` folder holds one logo per NFL team. A **manifest** maps team abbreviation → logo path so backend and frontend use the same asset. See **[docs/TEAM_LOGOS.md](docs/TEAM_LOGOS.md)** for filename format, how to regenerate the manifest, and how duplicates/unmatched files are handled. Regenerate with: `python scripts/generate_team_logo_manifest.py`. To serve logos in the frontend, run: `python scripts/sync_team_logos_to_frontend.py`.
-
----
-
-## Quickstart
-
-From the project root (with the package installed):
-
-```bash
-pip install -e .
-```
-
-**Generate Slide 5 (prediction + explainer + JSON)** for 2025, SEA vs NE, opponent-weighted keys:
-
-```bash
-python scripts/run_and_make_slide5.py --year 2025 --team-a SEA --team-b NE --mode opp_weighted
-```
-
-With debug output (key winners, margins, contributions, per-game table):
-
-```bash
-python scripts/run_and_make_slide5.py --year 2025 --team-a SEA --team-b NE --mode opp_weighted --debug
-```
-
-**Generate QB production card** for 2025 (example: Drake Maye vs Sam Darnold):
-
-```bash
-python scripts/make_qb_prod_card.py --year 2025 --qb-a "Drake Maye" --team-a NE --qb-b "Sam Darnold" --team-b SEA
-```
-
-Data is loaded via **nflreadpy** (nflverse). Optional filesystem cache:
-
-```bash
-export NFLREADPY_CACHE=filesystem
-export NFLREADPY_CACHE_DIR=~/.cache/nflreadpy
-```
-
-Requirements: Python 3.9+, nflreadpy, pandas. Optional: streamlit, matplotlib, pytest.
+- **Primary NFL data path:** nflverse-style tables for combine measurables, career summaries, and team-season context used to score needs and build the board.
+- **Optional college layer:** CFBD player-season stats when an API key is present; otherwise college-driven subscores default to neutral behavior with explicit metadata in API responses.
+- **Consensus:** When third-party board files are available, consensus rank and variance inform reach-risk and simulation ordering; when not, the pipeline is transparently model-forward.
+- **RMU / “hackathon module” framing:** The repository and UI copy reference an **RMU SAC** first-round prediction / hackathon module as the narrative wrapper for the Round‑1 projection and class scoring story—aligned with the conference’s emphasis on reproducible sports analytics and clear communication of model limits.
 
 ---
 
-## GridironIQ: Backend API & Frontend
+## Intellectual honesty for judges
 
-The **GridironIQ** backend (`src/gridironiq/`) exposes matchup prediction, scouting reports, and Python-native report endpoints. The **gridiron-intel** frontend (Lovable-generated) consumes these APIs for the Matchup Engine UI.
-
-### Running the backend
-
-From the project root:
-
-```bash
-uv run uvicorn gridironiq.api:app --reload --host 0.0.0.0 --port 8000
-```
-
-Or with `pip install -e .`:
-
-```bash
-uvicorn gridironiq.api:app --reload --port 8000
-```
-
-### Running the frontend
-
-From the `gridiron-intel` directory:
-
-```bash
-cd gridiron-intel && npm install && npm run dev
-```
-
-Set `VITE_API_BASE_URL=http://127.0.0.1:8000` if the API runs elsewhere.
-
-### Report types (Python-native)
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/matchup/run` | Run matchup prediction (win prob, score, keys). |
-| `POST /api/matchup/report` | Structured scouting report (summary, strengths, profiles). |
-| `POST /api/report/matchup` | Full matchup report: prediction + situational edges + offense vs defense + optional heatmap asset paths. |
-| `POST /api/report/broadcast` | Broadcast-style report: headline stats, talking points, top 3 storylines. |
-| `POST /api/report/presentation` | Presentation-style report: slides with bullets and key edges. |
-| `POST /api/report/situational` | Run/pass and situational tendency data only (no heatmaps). |
-
-Request body for report endpoints: `{ "season": 2024, "team_a": "GB", "team_b": "DET", "week": null, "mode": "opp_weighted", "generate_heatmaps": false }`.
-
-### From NFL_Report_Engine to GridironIQ
-
-An earlier version of this project used a separate R/Shiny app (`NFL_Report_Engine/`) to produce matchup reports, situational heatmaps, and broadcast-style outputs. Those ideas have been fully ported into Python.
-
-The **Python-native reports** in `src/gridironiq/reports/` now provide that functionality so the frontend can consume JSON (and optional PNG assets) from the GridironIQ API:
-
-- **Situational bucketing and tendencies** — `reports/situational.py`: down/distance and field-position buckets, run/pass tendency by situation, success rate, offense vs defense comparison.
-- **Heatmaps** — `reports/heatmaps.py`: run/pass tendency, success rate, matchup advantage, run direction, QB passing (location × depth). Outputs go to `outputs/reports/` with deterministic names.
-- **Matchup / broadcast / presentation** — `reports/matchup_report.py`, `broadcast_report.py`, `presentation_report.py`: full report JSON and media/slide-friendly summaries.
-
-See **MIGRATION_R_TO_PYTHON.md** for a detailed mapping of R features to Python modules, data dependencies, and migration status. There is no remaining runtime dependency on R; only a curated set of legacy PNGs is kept under `outputs/legacy_reports/` and `gridiron-intel/public/reports/` as design reference.
-
-## Draft Room Reports
-
-GridironIQ generates professional 8.5×11 PDF draft room reports matching the format used by NFL front offices.
-
-### Setup
-
-```bash
-pip install weasyprint
-```
-
-WeasyPrint requires system libraries on some platforms:
-
-- **macOS:** `brew install pango`
-- **Ubuntu:** `apt-get install libpango-1.0-0 libpangoft2-1.0-0`
-
-### Usage
-
-```bash
-python -m gridironiq.draft.pipeline \
-  --team [TEAM] \
-  --season [YEAR] \
-  --picks [PICK_SLOTS] \
-  --report \
-  --report-type all
-```
-
-### Report Types
-
-- **needs:** 1-page team need summary
-- **prospect:** 1-page prospect one-pager (`--prospect "Name Substring"` required)
-- **board:** full multi-page draft board
-- **all:** generates all three PDFs
-
-### AI Content
-
-Reports can use the **local Microsoft Phi-4 multimodal weights** loaded via `transformers` (`gridironiq.ai.phi4_provider`) when the model path is available and `--no-ai` is not set. There is no separate cloud API key in this repo.
-
-Use `--no-ai` for fully data-driven template content.
+GridironIQ Draft is designed to **show its seams**: consensus vs model, CFBD on vs off, simulation count and temperature, and explicit notes where independence or availability approximations apply. The goal is defensible analytics for a short decision window—not a black-box “trust the number” widget.
 
 ---
 
-## Methodology Notes
+## License
 
-- **Tie handling:** When a key is tied, it is explicitly labeled as TIE; neither team is forced a winner on that key.
-- **Big plays:** Pass ≥ 15 yards, rush ≥ 10 yards (configurable in `config.py`).
-- **Opponent meltdown dampener:** In `opp_weighted` mode, games where the opponent’s turnovers exceed a threshold are down-weighted so outlier giveaways don’t dominate the average.
-- **Availability:** The data layer reports readiness (GREEN / YELLOW / RED) based on required PBP columns for the 5 Keys pipeline.
-
----
-
-## Future Work
-
-- Improve score prediction calibration and uncertainty intervals.
-- Richer visuals: larger fonts, table layouts, no overlapping text.
-- Team rankings / percentiles in the explainer and slide assets.
-- Expanded scouting report export (e.g., PDF/PNG bundle).
-- Generalized matchup runner for any teams and years.
-- Model validation across past Super Bowls (backtesting).
-- Optional Streamlit/CLI for ad-hoc matchups without editing scripts.
-
----
-
-I’m continuing to refine SuperBowlEngine as a reusable system for matchup-level prediction and QB impact, and to align it with how front offices separate signal from noise. The codebase is structured so new seasons and matchups can be run with minimal changes.
+MIT (see `pyproject.toml`).

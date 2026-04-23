@@ -14,22 +14,31 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "nflreadpy>=0.1.0",
     "pandas>=2.0.0",
-    "streamlit>=1.28.0",
-    "matplotlib>=3.5.0",
     "scikit-learn>=1.0.0",
-    "xgboost>=2.0.0",
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.27.0",
-    "transformers>=4.40.0",
-    "torch>=2.2.0",
     "weasyprint>=60.0",
     "jinja2>=3.1.0",
 ]
 
 [project.optional-dependencies]
+# Heavy / GPU stacks — not needed for the FastAPI draft + matchup API on small hosts.
+streamlit = ["streamlit>=1.28.0"]
+phi4 = ["torch>=2.2.0", "transformers>=4.40.0"]
+plots = ["matplotlib>=3.5.0"]
+training = ["xgboost>=2.0.0", "matplotlib>=3.5.0"]
+all = [
+    "streamlit>=1.28.0",
+    "matplotlib>=3.5.0",
+    "xgboost>=2.0.0",
+    "torch>=2.2.0",
+    "transformers>=4.40.0",
+]
 dev = [
     "pytest>=7.0.0",
     "ruff>=0.1.0",
+    "matplotlib>=3.5.0",
+    "xgboost>=2.0.0",
 ]
 
 [project.scripts]

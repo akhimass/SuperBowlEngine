@@ -5,7 +5,6 @@ import logging
 from dataclasses import asdict
 from typing import Any, Dict, Optional
 
-from .phi4_provider import Phi4Provider
 from .schemas import ExplainerContext
 
 logger = logging.getLogger(__name__)
@@ -65,6 +64,8 @@ def generate_ai_chat_answer(
     prompt = build_chat_prompt(question, context)
 
     if resolved == "phi4":
+        from .phi4_provider import Phi4Provider
+
         provider = Phi4Provider()
         try:
             raw = provider._raw_generate(prompt, max_new_tokens=256)  # noqa: SLF001

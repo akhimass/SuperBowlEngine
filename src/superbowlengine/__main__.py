@@ -28,6 +28,15 @@ def _repro() -> None:
 
 def _app() -> None:
     import subprocess
+
+    try:
+        import streamlit  # noqa: F401
+    except ImportError as e:
+        raise SystemExit(
+            "Streamlit is not installed. Install optional UI deps, e.g.\n"
+            "  pip install -e \".[streamlit]\"\n"
+            "or the full local stack: pip install -e \".[all]\""
+        ) from e
     app_path = Path(__file__).resolve().parent / "app" / "streamlit_app.py"
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], check=True)
 

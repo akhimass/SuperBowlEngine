@@ -13,8 +13,6 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-import xgboost as xgb
-
 
 def build_lr_model(X_train: np.ndarray | pd.DataFrame, y_train: np.ndarray | pd.Series) -> Pipeline:
     pipe = Pipeline(
@@ -36,7 +34,9 @@ def build_lr_model(X_train: np.ndarray | pd.DataFrame, y_train: np.ndarray | pd.
     return pipe
 
 
-def build_xgb_model(X_train: np.ndarray | pd.DataFrame, y_train: np.ndarray | pd.Series) -> xgb.XGBClassifier:
+def build_xgb_model(X_train: np.ndarray | pd.DataFrame, y_train: np.ndarray | pd.Series) -> Any:
+    import xgboost as xgb
+
     y = np.asarray(y_train).astype(int).ravel()
     n_neg = int((y == 0).sum())
     n_pos = int((y == 1).sum())
@@ -82,7 +82,7 @@ def evaluate_model(model: Any, X: np.ndarray | pd.DataFrame, y: np.ndarray | pd.
 
 def get_feature_importance(
     lr_model: Pipeline,
-    xgb_model: xgb.XGBClassifier,
+    xgb_model: Any,
     feature_names: list[str],
     position: str,
 ) -> pd.DataFrame:
@@ -117,7 +117,7 @@ def get_feature_importance(
 
 def predict_first_round_prob(
     lr_model: Pipeline,
-    xgb_model: xgb.XGBClassifier,
+    xgb_model: Any,
     X_test: np.ndarray | pd.DataFrame,
     *,
     lr_weight: float = 0.40,
