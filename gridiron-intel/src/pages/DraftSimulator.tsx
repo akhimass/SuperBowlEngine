@@ -919,12 +919,18 @@ const TEAM_NEEDS = {
   "Seattle Seahawks": ["RB", "EDGE"],
 };
 
-const NAVY = "#1a2744";
-const GOLD = "#c9a84c";
-const GREEN = "#27ae60";
+/** Platform palette (gridironiq_platform.html) */
+const INK = "#050709";
+const SURFACE = "#131928";
+const SURFACE2 = "#1a2235";
+const GOLD = "#d4a843";
+const GREEN = "#3ecf7a";
 const AMBER = "#e67e22";
-const RED = "#c0392b";
-const GRAY = "#6b7280";
+const RED = "#e05252";
+const TEXT = "#dde4ef";
+const TEXT2 = "#7d8fa8";
+const TEXT3 = "#5c6b82";
+const BORDER = "rgba(255,255,255,0.08)";
 
 function posMatchesNeed(prospectPos, needPos) {
   const map = {
@@ -961,19 +967,19 @@ function projectPicks(teamName, availableProspects) {
 
 function posBadgeClass(pos) {
   const m = {
-    QB: "bg-red-100 text-red-800",
-    EDGE: "bg-orange-100 text-orange-800",
-    WR: "bg-blue-100 text-blue-800",
-    TE: "bg-teal-100 text-teal-800",
-    OT: "bg-green-100 text-green-800",
-    IOL: "bg-emerald-100 text-emerald-800",
-    CB: "bg-purple-100 text-purple-800",
-    S: "bg-indigo-100 text-indigo-800",
-    LB: "bg-yellow-100 text-yellow-800",
-    RB: "bg-pink-100 text-pink-800",
-    IDL: "bg-gray-100 text-gray-800",
+    QB: "bg-red-500/15 text-red-300",
+    EDGE: "bg-orange-500/15 text-orange-300",
+    WR: "bg-sky-500/15 text-sky-300",
+    TE: "bg-teal-500/15 text-teal-300",
+    OT: "bg-emerald-500/15 text-emerald-300",
+    IOL: "bg-emerald-500/15 text-emerald-200",
+    CB: "bg-violet-500/15 text-violet-300",
+    S: "bg-indigo-500/15 text-indigo-300",
+    LB: "bg-amber-500/15 text-amber-200",
+    RB: "bg-pink-500/15 text-pink-300",
+    IDL: "bg-zinc-500/20 text-zinc-300",
   };
-  return m[pos] || "bg-gray-100 text-gray-800";
+  return m[pos] || "bg-zinc-500/20 text-zinc-300";
 }
 
 export default function DraftSimulator() {
@@ -1219,21 +1225,18 @@ export default function DraftSimulator() {
 
   if (phase === "select-team") {
     return (
-      <div className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h1
-            className="text-3xl font-bold text-center mb-2"
-            style={{ color: NAVY }}
-          >
-            GridironIQ · 2026 NFL Draft Simulator
+      <div className="rounded-lg border py-10 px-4" style={{ backgroundColor: INK, borderColor: BORDER }}>
+        <div className="mx-auto max-w-4xl">
+          <h1 className="mb-2 text-center text-3xl font-bold tracking-tight" style={{ color: TEXT }}>
+            2026 NFL Draft · Round 1
           </h1>
-          <p className="text-center mb-8" style={{ color: GRAY }}>
-            Round 1 Only · 32 Picks · April 23, Pittsburgh
+          <p className="mb-8 text-center font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: TEXT2 }}>
+            32 picks · April 23 · Pittsburgh
           </p>
-          <p className="text-center font-medium mb-6" style={{ color: NAVY }}>
-            Select your team — you are the GM for Round 1
+          <p className="mb-6 text-center text-sm font-medium" style={{ color: TEXT2 }}>
+            Select your team — you control the board for pick 1–32
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {DRAFT_ORDER.map((d, i) => {
               const needs = TEAM_NEEDS[d.team] || [];
               return (
@@ -1241,35 +1244,34 @@ export default function DraftSimulator() {
                   key={d.pick}
                   type="button"
                   onClick={() => selectTeam(i)}
-                  className="border-2 border-gray-200 rounded-lg p-4 text-left transition-colors hover:text-white"
-                  style={{ borderColor: "#e5e7eb" }}
+                  className="rounded-lg border p-4 text-left transition-colors"
+                  style={{
+                    borderColor: BORDER,
+                    backgroundColor: SURFACE,
+                    color: TEXT,
+                  }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = NAVY;
-                    e.currentTarget.style.borderColor = NAVY;
+                    e.currentTarget.style.backgroundColor = SURFACE2;
+                    e.currentTarget.style.borderColor = "rgba(212,168,67,0.35)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "";
-                    e.currentTarget.style.borderColor = "#e5e7eb";
+                    e.currentTarget.style.backgroundColor = SURFACE;
+                    e.currentTarget.style.borderColor = BORDER;
                   }}
                 >
+                  <div className="text-2xl font-bold">{d.abbr}</div>
+                  <div className="mt-1 text-xs opacity-80">{d.team}</div>
                   <div
-                    className="text-2xl font-bold"
-                    style={{ color: "inherit" }}
-                  >
-                    {d.abbr}
-                  </div>
-                  <div className="text-xs mt-1 opacity-80">{d.team}</div>
-                  <div
-                    className="text-xs font-bold mt-2 inline-block px-2 py-0.5 rounded"
-                    style={{ backgroundColor: GOLD, color: NAVY }}
+                    className="mt-2 inline-block rounded px-2 py-0.5 text-xs font-bold"
+                    style={{ backgroundColor: "rgba(212,168,67,0.15)", color: GOLD }}
                   >
                     Pick #{d.pick}
                   </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-1">
                     {needs.slice(0, 2).map((n) => (
                       <span
                         key={n}
-                        className="text-xs px-1.5 py-0.5 rounded bg-gray-200 text-gray-700"
+                        className={`rounded px-1.5 py-0.5 text-xs ${posBadgeClass(n)}`}
                       >
                         {n}
                       </span>
@@ -1286,27 +1288,24 @@ export default function DraftSimulator() {
 
   if (phase === "complete") {
     return (
-      <div className="min-h-screen bg-gray-50 py-10 px-4">
-        <div className="max-w-2xl mx-auto">
-          <h1
-            className="text-2xl font-bold text-center mb-8"
-            style={{ color: NAVY }}
-          >
-            Round 1 Complete — 2026 NFL Draft
+      <div className="rounded-lg border py-10 px-4" style={{ backgroundColor: INK, borderColor: BORDER }}>
+        <div className="mx-auto max-w-2xl">
+          <h1 className="mb-8 text-center text-2xl font-bold" style={{ color: TEXT }}>
+            Round 1 complete
           </h1>
           {userPickRow && userProspect && (
             <div
-              className="border-2 rounded-lg p-6 mb-8 text-center"
-              style={{ borderColor: GOLD, backgroundColor: "#fffef5" }}
+              className="mb-8 rounded-lg border-2 p-6 text-center"
+              style={{ borderColor: "rgba(212,168,67,0.45)", backgroundColor: SURFACE }}
             >
-              <p className="text-lg font-semibold" style={{ color: NAVY }}>
+              <p className="text-lg font-semibold" style={{ color: TEXT }}>
                 {userPickRow.team} selected {userProspect.name} at pick #
                 {userPickRow.pick}
               </p>
               {gradeUserPick && (
                 <div className="mt-4">
                   <span
-                    className="inline-block px-4 py-2 rounded-full font-bold text-white"
+                    className="inline-block rounded-full px-4 py-2 font-bold text-white"
                     style={{
                       backgroundColor:
                         gradeUserPick.tone === "green"
@@ -1315,13 +1314,13 @@ export default function DraftSimulator() {
                             ? "#2563eb"
                             : gradeUserPick.tone === "amber"
                               ? AMBER
-                              : GRAY,
+                              : TEXT3,
                     }}
                   >
                     {gradeUserPick.label}
                   </span>
                   {gradeUserPick.sub && (
-                    <p className="mt-2 text-sm" style={{ color: NAVY }}>
+                    <p className="mt-2 text-sm" style={{ color: TEXT2 }}>
                       {gradeUserPick.sub}
                     </p>
                   )}
@@ -1329,28 +1328,38 @@ export default function DraftSimulator() {
               )}
             </div>
           )}
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-lg border" style={{ borderColor: BORDER }}>
+            <table className="w-full text-sm" style={{ color: TEXT }}>
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="text-left p-2">Pick</th>
-                  <th className="text-left p-2">Team</th>
-                  <th className="text-left p-2">Prospect</th>
-                  <th className="text-left p-2">Pos</th>
-                  <th className="text-left p-2">School</th>
-                  <th className="text-left p-2">Grade</th>
+                <tr style={{ backgroundColor: SURFACE2 }}>
+                  <th className="p-2 text-left text-xs font-normal uppercase tracking-wider" style={{ color: TEXT3 }}>
+                    Pick
+                  </th>
+                  <th className="p-2 text-left text-xs font-normal uppercase tracking-wider" style={{ color: TEXT3 }}>
+                    Team
+                  </th>
+                  <th className="p-2 text-left text-xs font-normal uppercase tracking-wider" style={{ color: TEXT3 }}>
+                    Prospect
+                  </th>
+                  <th className="p-2 text-left text-xs font-normal uppercase tracking-wider" style={{ color: TEXT3 }}>
+                    Pos
+                  </th>
+                  <th className="p-2 text-left text-xs font-normal uppercase tracking-wider" style={{ color: TEXT3 }}>
+                    School
+                  </th>
+                  <th className="p-2 text-left text-xs font-normal uppercase tracking-wider" style={{ color: TEXT3 }}>
+                    Grade
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {picks.map((row, i) => (
                   <tr
                     key={row.pick}
-                    className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    style={
-                      i === userPickIdx
-                        ? { backgroundColor: "#fff9e6" }
-                        : undefined
-                    }
+                    style={{
+                      backgroundColor: i % 2 === 0 ? SURFACE : INK,
+                      ...(i === userPickIdx ? { backgroundColor: "rgba(212,168,67,0.08)" } : {}),
+                    }}
                   >
                     <td className="p-2 font-mono">{row.pick}</td>
                     <td className="p-2">{row.abbr}</td>
@@ -1360,7 +1369,7 @@ export default function DraftSimulator() {
                     <td className="p-2">
                       {row.prospect ? (
                         <span
-                          className={`text-xs px-2 py-0.5 rounded ${posBadgeClass(row.prospect.pos)}`}
+                          className={`rounded px-2 py-0.5 text-xs ${posBadgeClass(row.prospect.pos)}`}
                         >
                           {row.prospect.pos}
                         </span>
@@ -1368,25 +1377,23 @@ export default function DraftSimulator() {
                         "—"
                       )}
                     </td>
-                    <td className="p-2 text-gray-600">
+                    <td className="p-2" style={{ color: TEXT2 }}>
                       {row.prospect ? row.prospect.school : "—"}
                     </td>
-                    <td className="p-2">
-                      {row.prospect ? row.prospect.grade : "—"}
-                    </td>
+                    <td className="p-2">{row.prospect ? row.prospect.grade : "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <div className="text-center mt-8">
+          <div className="mt-8 text-center">
             <button
               type="button"
               onClick={resetDraft}
-              className="px-6 py-3 rounded-lg font-bold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: NAVY }}
+              className="rounded-lg px-6 py-3 font-bold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: GOLD, color: INK }}
             >
-              Start New Draft
+              Start new draft
             </button>
           </div>
         </div>
@@ -1402,44 +1409,47 @@ export default function DraftSimulator() {
     userNeeds[0] && posMatchesNeed(p.pos, userNeeds[0]);
 
   return (
-    <div className="min-h-screen bg-gray-100 py-4 px-2">
-      <div className="max-w-7xl mx-auto flex flex-col gap-4">
+    <div className="rounded-lg border px-2 py-4" style={{ backgroundColor: INK, borderColor: BORDER }}>
+      <div className="mx-auto flex max-w-7xl flex-col gap-4">
         {confirming && (
           <div
-            className="w-full py-8 flex justify-center items-center rounded-lg"
-            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            className="flex w-full items-center justify-center rounded-lg py-8"
+            style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
           >
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 min-h-48">
-              <h3 className="text-xl font-bold" style={{ color: NAVY }}>
+            <div
+              className="mx-4 min-h-48 w-full max-w-md rounded-lg border p-6 shadow-xl"
+              style={{ backgroundColor: SURFACE, borderColor: "rgba(212,168,67,0.35)" }}
+            >
+              <h3 className="text-xl font-bold" style={{ color: TEXT }}>
                 {confirming.name}
               </h3>
-              <p className="text-gray-600 flex flex-wrap items-center gap-2">
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm" style={{ color: TEXT2 }}>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded font-semibold ${posBadgeClass(confirming.pos)}`}
+                  className={`rounded px-2 py-0.5 text-xs font-semibold ${posBadgeClass(confirming.pos)}`}
                 >
                   {confirming.pos}
                 </span>
                 <span>· {confirming.school}</span>
               </p>
-              <div className="grid grid-cols-2 gap-2 mt-4 text-sm">
+              <div className="mt-4 grid grid-cols-2 gap-2 text-sm" style={{ color: TEXT }}>
                 <div>
-                  <span className="text-gray-500">Rank</span>
+                  <span style={{ color: TEXT3 }}>Rank</span>
                   <div className="font-bold">{confirming.rank}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Grade</span>
+                  <span style={{ color: TEXT3 }}>Grade</span>
                   <div className="font-bold">{confirming.grade}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">40 Time</span>
+                  <span style={{ color: TEXT3 }}>40 Time</span>
                   <div className="font-bold">{confirming.forty}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Weight</span>
+                  <span style={{ color: TEXT3 }}>Weight</span>
                   <div className="font-bold">{confirming.weight}</div>
                 </div>
               </div>
-              <p className="mt-4 text-sm italic text-gray-600">
+              <p className="mt-4 text-sm italic" style={{ color: TEXT2 }}>
                 {confirming.notes}
               </p>
               {userNeeds[0] && posMatchesNeed(confirming.pos, userNeeds[0]) && (
@@ -1447,11 +1457,11 @@ export default function DraftSimulator() {
                   Addresses {userNeeds[0]} — team&apos;s top need
                 </p>
               )}
-              <div className="flex gap-3 mt-6">
+              <div className="mt-6 flex gap-3">
                 <button
                   type="button"
                   onClick={() => lockInPick(confirming)}
-                  className="flex-1 py-2 rounded font-bold text-white"
+                  className="flex-1 rounded py-2 font-bold text-white"
                   style={{ backgroundColor: GREEN }}
                 >
                   ✓ Confirm Pick
@@ -1459,7 +1469,8 @@ export default function DraftSimulator() {
                 <button
                   type="button"
                   onClick={() => setConfirming(null)}
-                  className="flex-1 py-2 rounded font-bold border-2 border-gray-300"
+                  className="flex-1 rounded border-2 py-2 font-bold"
+                  style={{ borderColor: BORDER, color: TEXT2 }}
                 >
                   ← Back
                 </button>
@@ -1468,36 +1479,36 @@ export default function DraftSimulator() {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="lg:w-3/12 flex-shrink-0">
-            <h2 className="font-bold mb-2" style={{ color: NAVY }}>
-              Round 1 Board
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="flex-shrink-0 lg:w-3/12">
+            <h2 className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: GOLD }}>
+              // Round 1 board
             </h2>
-            <div className="bg-white rounded border border-gray-200 max-h-96 overflow-y-auto">
+            <div className="max-h-96 overflow-y-auto rounded border" style={{ borderColor: BORDER, backgroundColor: SURFACE }}>
               {picks.map((row, i) => {
                 const done = row.prospect !== null;
                 const current = i === currentIdx;
                 const userRow = i === userPickIdx;
+                const rowInk = userRow && done;
                 return (
                   <div
                     key={row.pick}
                     ref={current ? currentRowRef : undefined}
-                    className={`flex items-center gap-2 px-2 py-1 text-sm border-b border-gray-100 h-9 ${
-                      current
-                        ? "text-white animate-pulse"
-                        : done
-                          ? "text-gray-400"
-                          : ""
+                    className={`flex h-9 items-center gap-2 border-b px-2 py-1 text-sm ${
+                      current ? "animate-pulse text-white" : done ? "" : ""
                     }`}
                     style={{
+                      borderColor: BORDER,
+                      color: current ? TEXT : done ? TEXT2 : TEXT,
                       backgroundColor: current
-                        ? NAVY
+                        ? SURFACE2
                         : userRow && done
-                          ? GOLD
+                          ? "rgba(212,168,67,0.22)"
                           : "transparent",
                       borderLeftWidth: userRow && !done ? 3 : 0,
                       borderLeftColor: userRow && !done ? GOLD : "transparent",
                       borderLeftStyle: "solid",
+                      ...(rowInk ? { color: INK } : {}),
                     }}
                   >
                     <span className="w-6 font-mono">{row.pick}</span>
@@ -1506,54 +1517,49 @@ export default function DraftSimulator() {
                       {done ? row.prospect.name : current ? "ON CLOCK" : "—"}
                     </span>
                     {done && row.prospect && (
-                      <span
-                        className={`text-xs px-1 rounded ${posBadgeClass(row.prospect.pos)}`}
-                      >
+                      <span className={`rounded px-1 text-xs ${posBadgeClass(row.prospect.pos)}`}>
                         {row.prospect.pos}
                       </span>
                     )}
-                    {done && <span className="text-green-600">✓</span>}
-                    {userRow && done && <span className="text-yellow-900">★</span>}
-                    {current && (
-                      <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    )}
+                    {done && <span style={{ color: GREEN }}>✓</span>}
+                    {userRow && done && <span style={{ color: INK }}>★</span>}
+                    {current && <span className="h-2 w-2 animate-pulse rounded-full bg-[#d4a843]" />}
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div className="lg:w-5/12 flex-shrink-0">
+          <div className="flex-shrink-0 lg:w-5/12">
             <div
-              className={`bg-white rounded-lg border-2 p-4 min-h-96 ${
-                isUserOnClock ? "border-yellow-500" : "border-gray-200"
-              }`}
-              style={
-                isUserOnClock ? { borderColor: GOLD } : undefined
-              }
+              className="min-h-96 rounded-lg border-2 p-4"
+              style={{
+                backgroundColor: SURFACE,
+                borderColor: isUserOnClock ? GOLD : BORDER,
+              }}
             >
               {slot && (
                 <>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="mb-1 flex items-center gap-2">
                     {isUserOnClock && (
                       <span
-                        className="text-xs font-bold px-2 py-0.5 rounded text-white"
-                        style={{ backgroundColor: GOLD, color: NAVY }}
+                        className="rounded px-2 py-0.5 text-xs font-bold"
+                        style={{ backgroundColor: GOLD, color: INK }}
                       >
                         YOUR PICK
                       </span>
                     )}
                   </div>
-                  <h2 className="text-xl font-bold" style={{ color: NAVY }}>
+                  <h2 className="text-xl font-bold" style={{ color: TEXT }}>
                     Pick {slot.pick} — {slot.team}
                   </h2>
-                  <div className="flex gap-2 mt-2 mb-4">
+                  <div className="mb-4 mt-2 flex gap-2">
                     {needsNow.map((n, ni) => (
                       <span
                         key={n}
-                        className="text-xs font-semibold px-2 py-1 rounded text-white"
+                        className="rounded px-2 py-1 text-xs font-semibold text-white"
                         style={{
-                          backgroundColor: ni === 0 ? NAVY : RED,
+                          backgroundColor: ni === 0 ? SURFACE2 : RED,
                         }}
                       >
                         {n}
@@ -1563,93 +1569,83 @@ export default function DraftSimulator() {
 
                   {!isUserOnClock && (
                     <>
-                      <h3 className="font-semibold text-gray-700 mb-2">
-                        Projected Picks
+                      <h3 className="mb-2 font-semibold" style={{ color: TEXT2 }}>
+                        Projected picks
                       </h3>
                       {countdown !== null && (
-                        <div className="text-center py-6 mb-4">
-                          <div
-                            className="text-6xl font-bold"
-                            style={{ color: NAVY }}
-                          >
+                        <div className="mb-4 py-6 text-center">
+                          <div className="text-6xl font-bold" style={{ color: GOLD }}>
                             {countdown}
                           </div>
-                          <p className="text-gray-600 mt-2">
+                          <p className="mt-2" style={{ color: TEXT2 }}>
                             Auto-selecting: {projections[0]?.name}
                           </p>
                         </div>
                       )}
-                      <div className="space-y-2 mb-4">
+                      <div className="mb-4 space-y-2">
                         {projections.map((p, idx) => (
                           <div
                             key={p.id}
-                            className={`border rounded p-2 ${
-                              idx === 0 ? "border-2" : "border-gray-200"
-                            }`}
-                            style={
-                              idx === 0
-                                ? { borderColor: GREEN }
-                                : undefined
-                            }
+                            className="rounded border p-2"
+                            style={{
+                              borderColor: idx === 0 ? GREEN : BORDER,
+                              borderWidth: idx === 0 ? 2 : 1,
+                            }}
                           >
-                            <div className="flex justify-between items-start">
-                              <div>
+                            <div className="flex items-start justify-between">
+                              <div style={{ color: TEXT }}>
                                 {idx === 0 && (
                                   <span
-                                    className="text-xs font-bold text-white px-2 py-0.5 rounded mr-2"
+                                    className="mr-2 rounded px-2 py-0.5 text-xs font-bold text-white"
                                     style={{ backgroundColor: GREEN }}
                                   >
                                     AI Pick
                                   </span>
                                 )}
                                 <span className="font-bold">{p.name}</span>
-                                <span
-                                  className={`ml-2 text-xs px-2 py-0.5 rounded ${posBadgeClass(p.pos)}`}
-                                >
+                                <span className={`ml-2 rounded px-2 py-0.5 text-xs ${posBadgeClass(p.pos)}`}>
                                   {p.pos}
                                 </span>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs" style={{ color: TEXT3 }}>
                                   {p.school}
                                 </div>
                               </div>
-                              <span
-                                className="text-xs font-mono font-bold"
-                                style={{ color: NAVY }}
-                              >
+                              <span className="font-mono text-xs font-bold" style={{ color: GOLD }}>
                                 #{p.rank}
                               </span>
                             </div>
-                            <div className="mt-2 h-2 bg-gray-200 rounded overflow-hidden">
+                            <div className="mt-2 h-2 overflow-hidden rounded" style={{ backgroundColor: SURFACE2 }}>
                               <div
                                 className="h-full rounded"
                                 style={{
                                   width: `${p.grade}%`,
-                                  backgroundColor: NAVY,
+                                  backgroundColor: GOLD,
                                 }}
                               />
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="mb-4 flex flex-wrap gap-2">
                         <button
                           type="button"
                           onClick={onAutoPick}
-                          className="px-4 py-2 rounded font-semibold text-white"
-                          style={{ backgroundColor: NAVY }}
+                          className="rounded px-4 py-2 font-semibold text-white"
+                          style={{ backgroundColor: SURFACE2 }}
                         >
-                          Auto Pick — select #1 projection
+                          Auto pick — #1 projection
                         </button>
                         <button
                           type="button"
                           onClick={startCountdown}
                           disabled={countdown !== null}
-                          className="px-4 py-2 rounded font-semibold border-2 border-gray-400 disabled:opacity-50"
+                          className="rounded border-2 px-4 py-2 font-semibold disabled:opacity-50"
+                          style={{ borderColor: BORDER, color: TEXT2 }}
                         >
-                          Set Timer — 3s countdown then auto-pick
+                          Set timer — 3s
                         </button>
                       </div>
-                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm" style={{ color: TEXT2 }}>
                         <input
                           type="checkbox"
                           checked={autoAdv}
@@ -1662,28 +1658,34 @@ export default function DraftSimulator() {
 
                   {isUserOnClock && (
                     <div>
-                      <div className="relative flex items-center mb-3">
+                      <div className="relative mb-3 flex items-center">
                         <input
                           ref={searchRef}
                           type="text"
                           value={query}
                           onChange={(e) => setQuery(e.target.value)}
                           placeholder="Search name, position, school..."
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10"
+                          className="w-full rounded-lg border px-3 py-2 pr-10"
+                          style={{
+                            borderColor: BORDER,
+                            backgroundColor: INK,
+                            color: TEXT,
+                          }}
                         />
                         {query && (
                           <button
                             type="button"
                             onClick={() => setQuery("")}
-                            className="absolute right-2 text-gray-500 font-bold"
+                            className="absolute right-2 font-bold"
+                            style={{ color: TEXT3 }}
                           >
                             ✕
                           </button>
                         )}
                       </div>
-                      <div className="max-h-80 overflow-y-auto border border-gray-200 rounded">
+                      <div className="max-h-80 overflow-y-auto rounded border" style={{ borderColor: BORDER }}>
                         {filteredProspects.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">
+                          <div className="p-4 text-center" style={{ color: TEXT3 }}>
                             No prospects match search
                           </div>
                         ) : (
@@ -1692,38 +1694,35 @@ export default function DraftSimulator() {
                               key={p.id}
                               type="button"
                               onClick={() => setConfirming(p)}
-                              className={`w-full text-left px-3 py-2 border-b border-gray-100 flex items-center gap-2 h-12 hover:bg-gray-50 ${
-                                topNeedMatch(p)
-                                  ? "border-l-4"
-                                  : ""
+                              className={`flex h-12 w-full items-center gap-2 border-b px-3 py-2 text-left ${
+                                topNeedMatch(p) ? "border-l-4" : ""
                               }`}
-                              style={
-                                topNeedMatch(p)
-                                  ? { borderLeftColor: GREEN }
-                                  : undefined
-                              }
+                              style={{
+                                borderColor: BORDER,
+                                color: TEXT,
+                                ...(topNeedMatch(p) ? { borderLeftColor: GREEN } : {}),
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = SURFACE2;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "transparent";
+                              }}
                             >
                               <span
-                                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                                style={{ backgroundColor: NAVY }}
+                                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                                style={{ backgroundColor: SURFACE2 }}
                               >
                                 {p.rank}
                               </span>
-                              <span className="font-bold flex-shrink-0">
-                                {p.name}
-                              </span>
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded flex-shrink-0 ${posBadgeClass(p.pos)}`}
-                              >
+                              <span className="flex-shrink-0 font-bold">{p.name}</span>
+                              <span className={`flex-shrink-0 rounded px-2 py-0.5 text-xs ${posBadgeClass(p.pos)}`}>
                                 {p.pos}
                               </span>
-                              <span className="text-xs text-gray-500 truncate flex-1">
+                              <span className="flex-1 truncate text-xs" style={{ color: TEXT3 }}>
                                 {p.school}
                               </span>
-                              <span
-                                className="font-bold flex-shrink-0"
-                                style={{ color: NAVY }}
-                              >
+                              <span className="flex-shrink-0 font-bold" style={{ color: GOLD }}>
                                 {p.grade}
                               </span>
                             </button>
@@ -1737,31 +1736,24 @@ export default function DraftSimulator() {
             </div>
           </div>
 
-          <div className="lg:w-3/12 flex-shrink-0">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-bold text-lg" style={{ color: NAVY }}>
+          <div className="flex-shrink-0 lg:w-3/12">
+            <div className="rounded-lg border p-4" style={{ borderColor: BORDER, backgroundColor: SURFACE }}>
+              <h3 className="text-lg font-bold" style={{ color: TEXT }}>
                 {userTeamName}
               </h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm" style={{ color: TEXT2 }}>
                 Pick #{DRAFT_ORDER[userPickIdx].pick} of 32
               </p>
               <div className="mt-3">
-                <p className="text-xs font-semibold text-gray-500 uppercase">
+                <p className="text-xs font-semibold uppercase" style={{ color: TEXT3 }}>
                   Top needs
                 </p>
-                <ul className="text-sm mt-1 space-y-1">
+                <ul className="mt-1 space-y-1 text-sm" style={{ color: TEXT }}>
                   {userNeeds.map((n) => {
-                    const filled =
-                      userProspect && posMatchesNeed(userProspect.pos, n);
+                    const filled = userProspect && posMatchesNeed(userProspect.pos, n);
                     return (
                       <li key={n} className="flex items-center gap-2">
-                        <span
-                          className={
-                            filled ? "text-green-600" : "text-gray-400"
-                          }
-                        >
-                          {filled ? "●" : "○"}
-                        </span>
+                        <span style={{ color: filled ? GREEN : TEXT3 }}>{filled ? "●" : "○"}</span>
                         {n}
                       </li>
                     );
@@ -1769,23 +1761,23 @@ export default function DraftSimulator() {
                 </ul>
               </div>
               {userProspect && (
-                <div className="mt-4 p-3 rounded bg-gray-50">
-                  <p className="text-xs text-gray-500">Your selection</p>
+                <div className="mt-4 rounded p-3" style={{ backgroundColor: INK }}>
+                  <p className="text-xs" style={{ color: TEXT3 }}>
+                    Your selection
+                  </p>
                   <p className="font-bold">{userProspect.name}</p>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded inline-block mt-1 ${posBadgeClass(userProspect.pos)}`}
-                  >
+                  <span className={`mt-1 inline-block rounded px-2 py-0.5 text-xs ${posBadgeClass(userProspect.pos)}`}>
                     {userProspect.pos}
                   </span>
                   <div
-                    className="mt-2 inline-block px-3 py-1 rounded-full text-white text-sm font-bold"
-                    style={{ backgroundColor: NAVY }}
+                    className="mt-2 inline-block rounded-full px-3 py-1 text-sm font-bold text-white"
+                    style={{ backgroundColor: SURFACE2 }}
                   >
                     Grade {userProspect.grade}
                   </div>
                 </div>
               )}
-              <p className="mt-4 text-xs text-gray-500">
+              <p className="mt-4 text-xs" style={{ color: TEXT3 }}>
                 Draft position: Pick {DRAFT_ORDER[userPickIdx].pick} of 32
               </p>
             </div>

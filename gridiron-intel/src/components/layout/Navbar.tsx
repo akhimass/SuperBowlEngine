@@ -6,7 +6,6 @@ import {
   CalendarDays,
   FileText,
   Gauge,
-  ListOrdered,
   Menu,
   Trophy,
   X,
@@ -20,7 +19,6 @@ const navItems = [
   { to: "/accuracy", label: "Data Accuracy", icon: Gauge },
   { to: "/reports", label: "Report Library", icon: FileText },
   { to: "/draft", label: "Draft Room", icon: Trophy },
-  { to: "/draft/simulator", label: "2026 Mock Draft", icon: ListOrdered },
 ];
 
 export default function Navbar() {
@@ -40,7 +38,10 @@ export default function Navbar() {
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-1">
           {navItems.map((item) => {
-            const active = location.pathname === item.to;
+            const active =
+              item.to === "/draft"
+                ? location.pathname === "/draft" || location.pathname.startsWith("/draft/")
+                : location.pathname === item.to;
             return (
               <Link
                 key={item.to}
@@ -86,7 +87,11 @@ export default function Navbar() {
               to={item.to}
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-sm ${
-                location.pathname === item.to ? "text-foreground bg-secondary" : "text-muted-foreground"
+                (item.to === "/draft"
+                  ? location.pathname === "/draft" || location.pathname.startsWith("/draft/")
+                  : location.pathname === item.to)
+                  ? "text-foreground bg-secondary"
+                  : "text-muted-foreground"
               }`}
             >
               <item.icon className="h-4 w-4" />

@@ -51,7 +51,7 @@
 
     --font-display: 'Inter', system-ui, sans-serif;
     --font-body: 'Inter', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-mono: 'Share Tech Mono', 'JetBrains Mono', monospace;
     --font-serif: 'IBM Plex Serif', Georgia, serif;
   }
 }
@@ -64,6 +64,23 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
+    position: relative;
+  }
+
+  /* Subtle scanline overlay (gridironiq_platform.html) — pointer-events none */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.045) 2px,
+      rgba(0, 0, 0, 0.045) 4px
+    );
   }
 
   h1, h2, h3, h4, h5, h6 {
