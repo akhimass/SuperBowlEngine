@@ -29,7 +29,7 @@ import type {
 } from "@/lib/api.ts";
 import type { RmuConfidence, RmuData, RmuPosition, RmuProspect } from "@/lib/rmu.ts";
 import { confidenceColor, matchRmu } from "@/lib/rmu.ts";
-import type { EngineData } from "@/lib/engine.ts";
+import type { DraftPick, EngineData } from "@/lib/engine.ts";
 import { pct, topFeatures } from "@/lib/engine.ts";
 import DraftSimulator from "../DraftSimulator.tsx";
 import type { AnalyticsSubTab, BoardViewTab, DraftRoomTab, PosFilter } from "./draftBoardUtils.ts";
@@ -281,7 +281,12 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
     ? Math.round(p.rmuData.ensembleAucMean * 100)
     : null;
 
-  const showBoardLayers = p.roomTab === "board" || p.roomTab === "prospect_db";
+  const canonicalRoom = p.roomTab === "board" ? "big_board" : p.roomTab;
+  /** Views that render the prospect table + filter chips + board sub-tabs. */
+  const showBoardLayers =
+    canonicalRoom === "big_board" ||
+    canonicalRoom === "prospect_db" ||
+    canonicalRoom === "team_view";
   const layoutMainClass = p.selected ? "giq-draft-layout giq-draft-layout-with-side" : "giq-draft-layout";
 
   return (
@@ -289,37 +294,82 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
       {/* LEFT */}
       <aside className="giq-draft-left max-h-[calc(100vh-3.5rem)] overflow-y-auto lg:max-h-none">
         <div className="giq-panel-section">
-          <div className="giq-panel-title">TEAM_CONTEXT</div>
-          <div className="space-y-2 px-4 py-3">
-            <Label className="text-[10px] uppercase tracking-wider text-[#7d8fa8]">Team</Label>
-            <Select value={p.team} onValueChange={p.setTeam}>
-              <SelectTrigger className="h-8 w-full border-white/10 bg-[#050709] text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {p.displayTeams.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="space-y-1 pt-1">
-              <Label className="text-[10px] uppercase tracking-wider text-[#7d8fa8]">Pick #</Label>
-              <Input
-                type="number"
-                className="h-8 border-white/10 bg-[#050709] text-xs"
-                value={p.pickNumber}
-                min={1}
-                max={259}
-                onChange={(e) => p.setPickNumber(Number(e.target.value))}
-              />
-            </div>
-            <p className="pt-1 font-mono text-[9px] leading-relaxed text-[#3d4f66]">
-              2026 cycle · combine {DRAFT_COMBINE_SEASON} · CFB {DRAFT_CFB_SEASON} · eval {DRAFT_EVAL_SEASON}
-            </p>
-          </div>
+          <div className="giq-panel-title">BOARD_MODULES</div>
+          <NavBtn
+            icon="▦"
+            label="BIG_BOARD"
+            badge={p.rmuData ? String(p.rmuData.r1Projected) : undefined}
+            active={canonicalRoom === "big_board"}
+            onClick={() => p.setRoomTab("big_board")}
+          />
+          <NavBtn
+            icon="▣"
+            label="MOCK_DRAFT_R1"
+            badge="32"
+            active={canonicalRoom === "mock_draft"}
+            onClick={() => p.setRoomTab("mock_draft")}
+          />
+          <NavBtn
+            icon="▶"
+            label="SIMULATOR"
+            active={canonicalRoom === "simulator"}
+            onClick={() => p.setRoomTab("simulator")}
+          />
+          <NavBtn
+            icon="◎"
+            label="TEAM_VIEW"
+            badge={canonicalRoom === "team_view" ? p.team : undefined}
+            active={canonicalRoom === "team_view"}
+            onClick={() => p.setRoomTab("team_view")}
+          />
+          <NavBtn
+            icon="≡"
+            label="PROSPECT_DB"
+            active={canonicalRoom === "prospect_db"}
+            onClick={() => p.setRoomTab("prospect_db")}
+          />
+          <NavBtn
+            icon="⇄"
+            label="COMPARE"
+            active={canonicalRoom === "compare"}
+            onClick={() => p.setRoomTab("compare")}
+          />
+          <p className="px-4 pb-3 pt-1 font-mono text-[9px] leading-relaxed text-[#3d4f66]">
+            2026 cycle · combine {DRAFT_COMBINE_SEASON} · CFB {DRAFT_CFB_SEASON} · eval {DRAFT_EVAL_SEASON}
+          </p>
         </div>
+
+        {canonicalRoom === "team_view" && (
+          <div className="giq-panel-section">
+            <div className="giq-panel-title">TEAM_CONTEXT</div>
+            <div className="space-y-2 px-4 py-3">
+              <Label className="text-[10px] uppercase tracking-wider text-[#7d8fa8]">Team</Label>
+              <Select value={p.team} onValueChange={p.setTeam}>
+                <SelectTrigger className="h-8 w-full border-white/10 bg-[#050709] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {p.displayTeams.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="space-y-1 pt-1">
+                <Label className="text-[10px] uppercase tracking-wider text-[#7d8fa8]">Pick #</Label>
+                <Input
+                  type="number"
+                  className="h-8 border-white/10 bg-[#050709] text-xs"
+                  value={p.pickNumber}
+                  min={1}
+                  max={259}
+                  onChange={(e) => p.setPickNumber(Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="giq-panel-section">
           <div className="giq-panel-title">POSITION_FILTER</div>
@@ -410,32 +460,65 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
 
       {/* CENTER */}
       <div className="giq-draft-center min-w-0">
-        <div className="giq-room-tab-strip border-b border-white/[0.06] bg-[#0a0d14] px-2 py-2">
-          <div className="flex flex-wrap gap-1">
-            <RoomTabBtn label="BIG_BOARD" active={p.roomTab === "board"} onClick={() => p.setRoomTab("board")} />
+        <div className="giq-room-tab-strip sticky top-0 z-20 border-b border-white/[0.06] bg-[#0a0d14] px-2 py-2">
+          <div className="flex flex-wrap items-center gap-1">
             <RoomTabBtn
-              label="PROSPECT_DB"
-              active={p.roomTab === "prospect_db"}
-              onClick={() => p.setRoomTab("prospect_db")}
+              label="BIG_BOARD"
+              active={canonicalRoom === "big_board"}
+              onClick={() => p.setRoomTab("big_board")}
+            />
+            <RoomTabBtn
+              label="MOCK_DRAFT_R1"
+              active={canonicalRoom === "mock_draft"}
+              onClick={() => p.setRoomTab("mock_draft")}
             />
             <RoomTabBtn
               label="SIMULATOR"
-              active={p.roomTab === "simulator"}
+              active={canonicalRoom === "simulator"}
               onClick={() => p.setRoomTab("simulator")}
             />
-            <RoomTabBtn label="COMPARE" active={p.roomTab === "compare"} onClick={() => p.setRoomTab("compare")} />
+            <RoomTabBtn
+              label={canonicalRoom === "team_view" ? `TEAM · ${p.team}` : "TEAM_VIEW"}
+              active={canonicalRoom === "team_view"}
+              onClick={() => p.setRoomTab("team_view")}
+            />
+            <span className="mx-1 h-5 w-px bg-white/10" aria-hidden />
+            <RoomTabBtn
+              label="PROSPECT_DB"
+              active={canonicalRoom === "prospect_db"}
+              onClick={() => p.setRoomTab("prospect_db")}
+            />
+            <RoomTabBtn
+              label="COMPARE"
+              active={canonicalRoom === "compare"}
+              onClick={() => p.setRoomTab("compare")}
+            />
             <RoomTabBtn
               label="ANALYTICS"
-              active={p.roomTab === "analytics"}
+              active={canonicalRoom === "analytics"}
               onClick={() => p.setRoomTab("analytics")}
             />
+            {canonicalRoom === "analytics" && (
+              <button
+                type="button"
+                onClick={() => p.setRoomTab("big_board")}
+                className="ml-auto rounded border border-white/10 bg-[#050709] px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-[#7d8fa8] hover:text-[#dde4ef]"
+                title="Back to Big Board"
+              >
+                ← BIG_BOARD
+              </button>
+            )}
           </div>
         </div>
 
-        {p.roomTab === "simulator" && (
+        {canonicalRoom === "simulator" && (
           <div className="border-b border-white/[0.06] p-3">
             <DraftSimulator />
           </div>
+        )}
+
+        {canonicalRoom === "mock_draft" && (
+          <MockDraftPane rmuData={p.rmuData} engineData={p.engineData} />
         )}
 
         {showBoardLayers && (
@@ -485,11 +568,15 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
             <div className="giq-module-header">
               <div className="giq-mh-title">
                 <span>//</span>{" "}
-                {p.roomTab === "prospect_db"
+                {canonicalRoom === "prospect_db"
                   ? "PROSPECT_DB — LIVE nflverse BOARD (2026)"
-                  : "2026 NFL DRAFT — BIG_BOARD"}
+                  : canonicalRoom === "team_view"
+                    ? `TEAM_VIEW · ${p.team} · PICK ${p.pickNumber}`
+                    : "2026 NFL DRAFT — BIG_BOARD (R1 projections)"}
               </div>
-              <div className="giq-mh-sub">LIVE · {p.team}</div>
+              <div className="giq-mh-sub">
+                {canonicalRoom === "team_view" ? `TEAM · ${p.team}` : "LIVE · GLOBAL"}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.06] bg-[#0a0d14] px-4 py-3">
@@ -654,11 +741,11 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
           </div>
         )}
 
-        {p.roomTab === "board" && (
+        {canonicalRoom === "team_view" && (
           <div className="space-y-4 border-t border-white/[0.06] p-5">
             <div className="giq-module-header border-t-0">
               <div className="giq-mh-title">
-                <span>//</span> R1_PROJECTIONS · LEVERED_INTEL
+                <span>//</span> {p.team} · R1_PROJECTIONS · LEVERED_INTEL
               </div>
             </div>
             {!topRec && (
@@ -724,11 +811,11 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
           </div>
         )}
 
-        {p.roomTab === "board" && (
+        {canonicalRoom === "team_view" && (
           <div className="border-t border-white/[0.06] p-4">
             <div className="giq-module-header !border-t-0 !px-0 !pt-0">
               <div className="giq-mh-title">
-                <span>//</span> TRADE_DOWN_SCAN
+                <span>//</span> {p.team} · TRADE_DOWN_SCAN
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -921,7 +1008,7 @@ export default function DraftPlatformView(p: DraftPlatformViewProps) {
                 loading={p.rmuLoading}
                 error={p.rmuError}
                 onOpenBoard={() => {
-                  p.setRoomTab("board");
+                  p.setRoomTab("big_board");
                   p.setBoardViewTab("rmu_predictions");
                 }}
               />
@@ -1709,6 +1796,192 @@ function BacktestPane({
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Best-available-by-need mock draft.
+ *
+ * Uses a very lightweight need heuristic keyed off the 2025 record:
+ * teams that were worst at scoring (low PF) get a pass-catcher bump,
+ * teams that bled points (high PA) get a trench/DB bump. The combined
+ * cross-position R1 board (sorted by P(R1)) is the talent pool; the
+ * top-3 available by `final_score` are shown as "on-the-clock" options
+ * and the top pick is assigned.
+ */
+function MockDraftPane({
+  rmuData,
+  engineData,
+}: {
+  rmuData: RmuData | null | undefined;
+  engineData: EngineData | null | undefined;
+}) {
+  if (!engineData) {
+    return (
+      <div className="p-5 font-mono text-xs text-[#7d8fa8]">
+        Loading 2025 schedule to derive 2026 pick order…
+      </div>
+    );
+  }
+  if (!rmuData) {
+    return (
+      <div className="p-5 font-mono text-xs text-[#7d8fa8]">
+        Loading RMU/SAC prospect pool…
+      </div>
+    );
+  }
+
+  const order: DraftPick[] = engineData.draftOrder2026;
+  const board = [...engineData.r1Board].sort(
+    (a, b) => (b.r1_probability ?? 0) - (a.r1_probability ?? 0),
+  );
+  const taken = new Set<string>();
+  const picks: Array<{
+    pick: DraftPick;
+    pool: typeof board;
+    selected: (typeof board)[number] | null;
+  }> = [];
+
+  for (const pick of order) {
+    const pool = board.filter((r) => !taken.has(r.name));
+    const selected = pool[0] ?? null;
+    if (selected) taken.add(selected.name);
+    picks.push({ pick, pool: pool.slice(0, 3), selected });
+  }
+
+  const byPos: Record<string, number> = {};
+  for (const { selected } of picks) {
+    if (!selected) continue;
+    const key = selected.position ?? "—";
+    byPos[key] = (byPos[key] ?? 0) + 1;
+  }
+
+  return (
+    <div className="space-y-4 border-b border-white/[0.06] p-4">
+      <div className="giq-module-header border-t-0">
+        <div className="giq-mh-title">
+          <span>//</span> 2026 NFL DRAFT · MOCK · ROUND_1
+        </div>
+        <div className="font-mono text-[10px] uppercase tracking-wider text-[#7d8fa8]">
+          order · reverse 2025 standings · 32 picks
+        </div>
+      </div>
+
+      <div className="giq-kpi-bar">
+        <div className="giq-kpi-item">
+          <div className="giq-kpi-label">POOL_SIZE</div>
+          <div className="giq-kpi-value text-[22px] text-[#d4a843]">
+            {engineData.r1Board.length}
+          </div>
+          <div className="giq-kpi-delta">RANKED_BY_FINAL_SCORE</div>
+        </div>
+        <div className="giq-kpi-item">
+          <div className="giq-kpi-label">QB · WR · RB</div>
+          <div className="giq-kpi-value text-[22px] text-[#d4a843]">
+            {(byPos["QB"] ?? 0)} · {(byPos["WR"] ?? 0)} · {(byPos["RB"] ?? 0)}
+          </div>
+          <div className="giq-kpi-delta">SKILL_PICKS_R1</div>
+        </div>
+        <div className="giq-kpi-item">
+          <div className="giq-kpi-label">NO. 1_OVERALL</div>
+          <div className="giq-kpi-value text-[22px] text-[#dde4ef]">
+            {picks[0]?.selected?.name ?? "—"}
+          </div>
+          <div className="giq-kpi-delta">
+            {picks[0]?.pick.team ?? "—"} · {picks[0]?.pick.record
+              ? `${picks[0].pick.record.wins}-${picks[0].pick.record.losses}-${picks[0].pick.record.ties}`
+              : "—"}
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="giq-board-table w-full">
+          <thead className="giq-board-thead">
+            <tr>
+              <th className="text-left">PICK</th>
+              <th className="text-left">TEAM</th>
+              <th className="text-left">SELECTION</th>
+              <th className="text-left">POS</th>
+              <th className="text-left">SCHOOL</th>
+              <th className="text-right">P(R1)</th>
+              <th className="text-left">CONF</th>
+              <th className="text-left">NEXT_BEST</th>
+            </tr>
+          </thead>
+          <tbody>
+            {picks.map(({ pick, pool, selected }) => {
+              const rmu = selected ? matchRmu(rmuData, selected.name) : null;
+              return (
+                <tr key={pick.pick} className="giq-board-row">
+                  <td className="font-mono text-[#d4a843]">{String(pick.pick).padStart(2, "0")}</td>
+                  <td className="font-mono text-[#dde4ef]">{pick.team}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <Headshot rmu={rmu} name={selected?.name ?? "—"} size="sm" />
+                      <div className="min-w-0">
+                        <div className="truncate text-[13px] font-semibold text-[#dde4ef]">
+                          {selected?.name ?? "—"}
+                        </div>
+                        <div className="font-mono text-[10px] text-[#7d8fa8]">
+                          {pick.record
+                            ? `${pick.record.wins}-${pick.record.losses}-${pick.record.ties} · PD ${pick.record.point_diff > 0 ? "+" : ""}${pick.record.point_diff}`
+                            : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {selected ? (
+                      <span className={prospectPosPill(selected.position ?? "")}>
+                        {selected.position ?? "—"}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="font-mono text-[10px] text-[#7d8fa8]">{selected?.college_team ?? "—"}</td>
+                  <td className="text-right font-mono text-[#d4a843]">
+                    {selected?.r1_probability != null
+                      ? `${(selected.r1_probability * 100).toFixed(0)}%`
+                      : "—"}
+                  </td>
+                  <td>
+                    <span
+                      className={`giq-r1-chip ${
+                        selected?.confidence === "LOCK"
+                          ? "giq-r1-lock"
+                          : selected?.confidence === "HIGH"
+                            ? "giq-r1-high"
+                            : selected?.confidence === "MEDIUM"
+                              ? "giq-r1-med"
+                              : selected?.confidence === "LOW"
+                                ? "giq-r1-low"
+                                : "giq-r1-na"
+                      }`}
+                    >
+                      {selected?.confidence ?? "—"}
+                    </span>
+                  </td>
+                  <td className="font-mono text-[10px] text-[#7d8fa8]">
+                    {pool
+                      .filter((p) => p.name !== selected?.name)
+                      .slice(0, 2)
+                      .map((p) => `${p.name} (${p.position})`)
+                      .join(" · ") || "—"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="font-mono text-[10px] leading-relaxed text-[#7d8fa8]">
+        Pick order derived from completed 2025 NFL regular-season results (reverse standings,
+        tiebreaker by point differential). Selections pull from the combined R1 board ranked by
+        RMU ensemble P(R1). This is a best-player-available mock; team-specific need adjustments
+        live under TEAM_VIEW.
+      </p>
     </div>
   );
 }

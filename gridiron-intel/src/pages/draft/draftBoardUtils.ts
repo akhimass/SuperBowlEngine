@@ -54,19 +54,47 @@ export function sortProspects(rows: ApiDraftProspect[], key: TableSortKey, dir: 
   });
 }
 
-/** Primary draft room surface (tabs in the main column). */
-export type DraftRoomTab = "board" | "prospect_db" | "simulator" | "compare" | "analytics";
+/** Primary draft room surface (tabs in the main column).
+ *
+ * - `big_board` — Global 2026 R1 projections (no team context).
+ * - `mock_draft` — Full 32-pick R1 mock assigned by 2025 reverse standings.
+ * - `simulator` — Interactive live simulation.
+ * - `team_view` — Team-selectable big board + team mock + trade scan + analyst.
+ * - `prospect_db` — Searchable prospect database.
+ * - `compare` — Side-by-side prospect comparison.
+ * - `analytics` — Engine + model intel consoles.
+ *
+ * `"board"` is kept as a deprecated alias for `"big_board"` for URL backward
+ * compatibility.
+ */
+export type DraftRoomTab =
+  | "big_board"
+  | "mock_draft"
+  | "simulator"
+  | "team_view"
+  | "prospect_db"
+  | "compare"
+  | "analytics"
+  | "board"; // legacy
 
 export const DRAFT_ROOM_TABS: DraftRoomTab[] = [
-  "board",
-  "prospect_db",
+  "big_board",
+  "mock_draft",
   "simulator",
+  "team_view",
+  "prospect_db",
   "compare",
   "analytics",
+  "board",
 ];
 
 export function isDraftRoomTab(s: string | null): s is DraftRoomTab {
   return s != null && (DRAFT_ROOM_TABS as string[]).includes(s);
+}
+
+/** Map legacy `board` to the current `big_board` identifier. */
+export function normalizeDraftRoomTab(t: DraftRoomTab): Exclude<DraftRoomTab, "board"> {
+  return t === "board" ? "big_board" : t;
 }
 
 export type AnalyticsSubTab =

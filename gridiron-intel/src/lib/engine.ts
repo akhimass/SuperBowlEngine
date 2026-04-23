@@ -114,6 +114,22 @@ export interface R1BoardRow {
   stat_line: string;
 }
 
+export interface TeamRecord {
+  team: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  games_played: number;
+  win_pct: number;
+  point_diff: number;
+}
+
+export interface DraftPick {
+  pick: number;
+  team: string;
+  record: TeamRecord;
+}
+
 export interface EngineData {
   winProb: WinProbModel;
   margin: RegressionModel;
@@ -125,6 +141,10 @@ export interface EngineData {
   defStrength: DefStrengthRow[];
   sample: SamplePrediction;
   r1Board: R1BoardRow[];
+  /** 2025 final standings (descending by wins). */
+  standings2025: TeamRecord[];
+  /** 2026 first-round pick order derived from reverse 2025 standings. */
+  draftOrder2026: DraftPick[];
 }
 
 const SEASONS = [2020, 2021, 2022, 2023, 2024, 2025] as const;
@@ -153,6 +173,63 @@ function summarizeAccuracy(games: ScheduleGame[]): SeasonAccuracy {
   };
 }
 
+/** Compute final standings from completed games. */
+function computeStandings(games: ScheduleGame[]): TeamRecord[] {
+  const map = new Map<string, { w: number; l: number; t: number; gp: number; pf: number; pa: number }>();
+  for (const g of games) {
+    if (g.home_score == null || g.away_score == null) continue;
+    const h = g.home_team;
+    const a = g.away_team;
+    const hs = g.home_score;
+    const as_ = g.away_score;
+    if (!map.has(h)) map.set(h, { w: 0, l: 0, t: 0, gp: 0, pf: 0, pa: 0 });
+    if (!map.has(a)) map.set(a, { w: 0, l: 0, t: 0, gp: 0, pf: 0, pa: 0 });
+    const hr = map.get(h)!;
+    const ar = map.get(a)!;
+    hr.gp += 1;
+    ar.gp += 1;
+    hr.pf += hs;
+    hr.pa += as_;
+    ar.pf += as_;
+    ar.pa += hs;
+    if (hs > as_) {
+      hr.w += 1;
+      ar.l += 1;
+    } else if (as_ > hs) {
+      ar.w += 1;
+      hr.l += 1;
+    } else {
+      hr.t += 1;
+      ar.t += 1;
+    }
+  }
+  const records: TeamRecord[] = [...map.entries()].map(([team, r]) => ({
+    team,
+    wins: r.w,
+    losses: r.l,
+    ties: r.t,
+    games_played: r.gp,
+    win_pct: r.gp === 0 ? 0 : (r.w + 0.5 * r.t) / r.gp,
+    point_diff: r.pf - r.pa,
+  }));
+  records.sort((a, b) => {
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    if (b.win_pct !== a.win_pct) return b.win_pct - a.win_pct;
+    return b.point_diff - a.point_diff;
+  });
+  return records;
+}
+
+/** Reverse standings → 2026 pick order (first 32 picks = first round). */
+function computeDraftOrder(standings: TeamRecord[]): DraftPick[] {
+  const reversed = [...standings].sort((a, b) => {
+    if (a.wins !== b.wins) return a.wins - b.wins;
+    if (a.win_pct !== b.win_pct) return a.win_pct - b.win_pct;
+    return a.point_diff - b.point_diff;
+  });
+  return reversed.slice(0, 32).map((record, i) => ({ pick: i + 1, team: record.team, record }));
+}
+
 async function loadEngine(): Promise<EngineData> {
   const [winProb, margin, total, score, sample, defStrength, r1Board, ...seasonGames] =
     await Promise.all([
@@ -174,6 +251,10 @@ async function loadEngine(): Promise<EngineData> {
   const allGames = (seasonGames as ScheduleGame[][]).flat();
   const overall = { ...summarizeAccuracy(allGames), season: 0 };
 
+  const games2025 = (seasonGames as ScheduleGame[][])[SEASONS.indexOf(2025)] ?? [];
+  const standings2025 = computeStandings(games2025);
+  const draftOrder2026 = computeDraftOrder(standings2025);
+
   return {
     winProb,
     margin,
@@ -185,6 +266,8 @@ async function loadEngine(): Promise<EngineData> {
     defStrength,
     sample,
     r1Board,
+    standings2025,
+    draftOrder2026,
   };
 }
 

@@ -55,8 +55,10 @@ export default function DraftRoom() {
 
   const roomTab: DraftRoomTab = useMemo(() => {
     const r = searchParams.get("room");
-    if (isDraftRoomTab(r)) return r;
-    return "board";
+    if (isDraftRoomTab(r)) {
+      return r === "board" ? "big_board" : r;
+    }
+    return "big_board";
   }, [searchParams]);
 
   useEffect(() => {
@@ -73,9 +75,10 @@ export default function DraftRoom() {
     const n = new URLSearchParams(searchParams);
     n.delete("tab");
     n.delete("module");
-    if (tab === "board") n.delete("room");
-    else n.set("room", tab);
-    if (tab !== "analytics") n.delete("a");
+    const canonical = tab === "board" ? "big_board" : tab;
+    if (canonical === "big_board") n.delete("room");
+    else n.set("room", canonical);
+    if (canonical !== "analytics") n.delete("a");
     setSearchParams(n);
   };
 
