@@ -15,3 +15,7 @@ Phi-4-multimodal-instruct/
 .env.local
 
 gridironiq/dist/
+
+# Local Claude / deck handoff zip (regenerate with commands in CLAUDE_PRESENTATION_CONTEXT.md)
+presentation_bundle/
+presentation_bundle.zip
